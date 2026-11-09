@@ -9,6 +9,7 @@ import { useRoom } from "../lib/useRoom.ts";
 import { CharacterAvatar } from "../components/CharacterAvatar.tsx";
 import { HostQuestion, RoundResult } from "../components/HostRound.tsx";
 import { Leaderboard } from "../components/Leaderboard.tsx";
+import { MusicCredit } from "../components/MusicCredit.tsx";
 import { Podium } from "../components/Podium.tsx";
 import { SoundToggle } from "../components/SoundToggle.tsx";
 import { sound } from "../audio/ClassicalBgmEngine.ts";
@@ -228,6 +229,9 @@ function HostRoomView({ room, onExit }: { room: HostRoom; onExit: () => void }) 
           </button>
         </section>
       )}
+
+      {/* CC BY 4.0: 배경음악 출처 표기 (스크린에 길게 머무는 로비·최종 화면 아래에) */}
+      {(state.status === "lobby" || state.status === "finished") && <MusicCredit className="px-4 pt-2 pb-4" />}
     </main>
   );
 }

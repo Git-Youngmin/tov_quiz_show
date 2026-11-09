@@ -1,17 +1,14 @@
 /**
- * 토브 퀴즈쇼 전용 메이플스토리 스타일 스튜디오 BGM & SFX 사운드 엔진
+ * 토브 퀴즈쇼 BGM & 효과음 엔진
  *
- * 🍁 수록곡 (Apple Logic Pro 멀티 샘플 악기 & 라이브 드러머 스튜디오 프로덕션):
- *   - lobby(로비/홈): "Sunny Maple Plaza" (124 BPM, F Major)
- *     * 헤네시스(Floral Life) & 리스항구(Above the Treetops) 감성의 산뜻한 콘서트 플루트,
- *       스타인웨이 그랜드 피아노, 어쿠스틱 기타, 벨, 핑거스타일 베이스와 어쿠스틱 드럼 앙상블
- *   - playing(문제 풀이): "Monster Carnival Rush!" (134 BPM, E Dorian / G Major)
- *     * 커닝스퀘어 & 몬스터 카니발 감성의 펑키하고 세련된 신스 리드, 슬랩/핑거 베이스,
- *       일렉트릭 기타 찹, 브라스 스탭이 어우러진 속도감 있는 퀴즈 테마
- *   - leaderboard(순위 발표): "Starlight Party Quest" (120 BPM, A Major)
- *     * 루디브리엄 & 파티퀘스트 클리어 감성의 로즈 일렉트릭 피아노, 벨, 클라리넷·플루트 재즈팝 그루브
- *   - finished(최종 결과/시상식): "Maple Champions Parade!" (128 BPM, C Major)
- *     * 메이플 아일랜드 & 피날레 퍼레이드 감성의 팡파레 브라스, 풀 스트링, 피아노, 벨 트리 축제 테마
+ * BGM 은 Kevin MacLeod (incompetech.com) 의 곡이며 CC BY 4.0 라이선스입니다 → 출처 표기가 필요해서
+ * 곡 정보와 표기 문구는 ./credits.ts 에 모아 두고 화면(MusicCredit)과 public/audio/CREDITS.md 에 싣습니다.
+ *   lobby       Pleasant Porridge  (로비 라운지 느낌의 일렉트릭 피아노 그루브)
+ *   playing     Loopster           (문제 읽는 데 방해가 안 되는 미니멀 그루브)
+ *   leaderboard Funky Chunk        (점수판 줄이 움직일 때 어울리는 깔끔한 펑크)
+ *   finished    Heroic Age         (시상식 팡파르)
+ * 파일은 원곡에서 앞뒤 무음을 잘라내고 음량을 -18 LUFS 로 맞췄으며, 반복 재생 때 끊기지 않게 짧은 페이드를 넣었습니다.
+ * 곡을 바꿀 때는 같은 이름으로 public/audio/bgm_*.mp3 를 덮어쓰고 credits.ts 도 함께 고치세요.
  */
 
 export type BgmTrack = "lobby" | "playing" | "leaderboard" | "finished" | "off";
