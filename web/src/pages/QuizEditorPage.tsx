@@ -65,6 +65,7 @@ function Editor() {
   const [draft, setDraft] = useState<Draft | null>(null);
   const [dirty, setDirty] = useState(false);
   const [busy, setBusy] = useState(false);
+  const [loadError, setLoadError] = useState("");
   const [notice, setNotice] = useState<{ kind: "ok" | "error"; text: string } | null>(null);
   const bottomRef = useRef<HTMLDivElement>(null);
   const [importOpen, setImportOpen] = useState(false);
@@ -76,10 +77,12 @@ function Editor() {
   const refresh = useCallback(async () => {
     try {
       setQuizzes(await api.listQuizzes());
+      setLoadError("");
     } catch (e) {
-      fail(e as Error);
+      setQuizzes([]);
+      setLoadError((e as Error).message);
     }
-  }, [fail]);
+  }, []);
 
   useEffect(() => {
     void refresh();
@@ -216,6 +219,14 @@ function Editor() {
           ＋ 새 퀴즈 만들기
         </button>
         {!quizzes && <p className="text-mist">불러오는 중…</p>}
+        {loadError && (
+          <div role="alert" className="space-y-2 rounded-xl bg-red-500/20 p-3 text-sm text-red-100">
+            <p>{loadError}</p>
+            <button onClick={() => void refresh()} className="rounded-lg bg-white/15 px-3 py-1 font-bold">
+              다시 시도
+            </button>
+          </div>
+        )}
         <ul className="space-y-2">
           {quizzes?.map((q) => (
             <li key={q.id}>
@@ -229,7 +240,7 @@ function Editor() {
             </li>
           ))}
         </ul>
-        {quizzes?.length === 0 && <p className="text-sm text-mist">아직 퀴즈가 없어요. 새로 만들어 보세요.</p>}
+        {quizzes?.length === 0 && !loadError && <p className="text-sm text-mist">아직 퀴즈가 없어요. 새로 만들어 보세요.</p>}
       </aside>
 
       <section className="min-w-0">
