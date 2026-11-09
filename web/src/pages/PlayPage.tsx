@@ -7,7 +7,9 @@ import {
   isPin,
   type AnswerIndex,
   type Character,
+  type RankEntry,
 } from "@tob/shared";
+import { finaleSchedule, revealTime } from "../lib/finale.ts";
 import { api } from "../lib/api.ts";
 import { getPlayerId, loadProfile, saveProfile, type Profile } from "../lib/storage.ts";
 import { rankPlayers } from "../lib/ranking.ts";
@@ -16,6 +18,7 @@ import { useCountUp } from "../lib/useCountUp.ts";
 import { useRoom, type RoomView } from "../lib/useRoom.ts";
 import { AnswerButton } from "../components/AnswerButton.tsx";
 import { COLOR_HEX, COLOR_LABEL, CharacterAvatar, SHAPE_NICK, type Mood } from "../components/CharacterAvatar.tsx";
+import { Confetti } from "../components/Confetti.tsx";
 import { FuseTimer } from "../components/FuseTimer.tsx";
 import { QuestionIntro, TYPE_LABEL } from "../components/QuestionIntro.tsx";
 import { SoundToggle } from "../components/SoundToggle.tsx";
@@ -236,7 +239,6 @@ function PlayerGame({ pin, profile, onEditProfile }: { pin: string; profile: Pro
   if (!state || !me) return <Center title="입장하는 중…" />;
 
   const ranking = rankPlayers(state);
-  const myRank = ranking.find((e) => e.playerId === playerId);
 
   return (
     <main className="flex min-h-full flex-col">
@@ -280,14 +282,70 @@ function PlayerGame({ pin, profile, onEditProfile }: { pin: string; profile: Pro
           <Center title="결과 집계 중…" />
         ))}
 
-      {state.status === "finished" && (
-        <Center
-          title="게임 끝!"
-          subtitle={myRank ? `최종 ${myRank.rank}등 · ${myRank.score.toLocaleString()}점` : undefined}
-          avatar={<CharacterAvatar character={me.character} size={150} mood={myRank && myRank.rank <= 3 ? "cheer" : "idle"} seed={playerId} popIn />}
-        />
-      )}
+      {state.status === "finished" && <PlayerFinale ranking={ranking} playerId={playerId} character={me.character} />}
     </main>
+  );
+}
+
+/**
+ * 최종 순위 (폰). 스크린에서 내 등수가 발표되는 순간(lib/finale.ts 시간표)에 맞춰 공개해서,
+ * 폰을 먼저 본 사람 때문에 발표의 긴장감이 사라지지 않게 한다. 화면을 톡 치면 바로 볼 수 있다.
+ * 등수마다 세레머니가 다르다: 1등 공중 뒤돌기 + 춤, 2등 더블 점프 + 회전, 3등 폴짝.
+ */
+function PlayerFinale({ ranking, playerId, character }: { ranking: RankEntry[]; playerId: string; character: Character }) {
+  const idx = ranking.findIndex((e) => e.playerId === playerId);
+  const entry = ranking[idx];
+  const sched = useMemo(() => finaleSchedule(Math.min(3, ranking.length)), [ranking.length]);
+  const at = revealTime(idx < 0 ? 3 : idx, sched);
+  const [shown, setShown] = useState(false);
+
+  useEffect(() => {
+    const t = window.setTimeout(() => setShown(true), at);
+    return () => window.clearTimeout(t);
+  }, [at]);
+  useEffect(() => {
+    if (shown) sound.playCorrect();
+  }, [shown]);
+
+  if (!entry) return <Center title="게임 끝!" />;
+
+  if (!shown) {
+    return (
+      <button type="button" onClick={() => setShown(true)} className="flex flex-1 flex-col items-center justify-center gap-2 p-6 text-center">
+        <CharacterAvatar character={character} size={150} mood="wave" seed={playerId} />
+        <p className="finale__suspense text-3xl font-black text-gold-200">🎬 시상식이 진행 중이에요!</p>
+        <p className="text-lg text-mist">스크린을 봐 주세요. 내 이름이 곧 호명돼요</p>
+        <p className="mt-6 text-sm text-mist/60">화면을 톡 치면 바로 볼 수 있어요</p>
+      </button>
+    );
+  }
+
+  const podium = idx <= 2;
+  const headline = idx === 0 ? "👑 우승!" : idx === 1 ? "🥈 2등!" : idx === 2 ? "🥉 3등!" : `최종 ${entry.rank}등`;
+  const ceremony = idx === 0 ? "cer-1" : idx === 1 ? "cer-2" : "cer-3";
+  return (
+    <section className="relative flex flex-1 flex-col items-center justify-center gap-3 overflow-hidden p-6 text-center">
+      {idx === 0 && <div className="finale__rays" aria-hidden />}
+      {podium && <Confetti count={idx === 0 ? 70 : idx === 1 ? 40 : 28} seed={idx + 3} />}
+      <div className="char-drop relative">
+        <div className={podium ? ceremony : ""}>
+          <div className="relative">
+            {idx === 0 && (
+              <span className="crown-drop absolute -top-6 left-1/2 z-10 -translate-x-1/2 text-5xl" style={{ animationDelay: "1s" }} aria-hidden>
+                👑
+              </span>
+            )}
+            <CharacterAvatar character={character} size={podium ? 170 : 150} mood={podium ? "cheer" : "happy"} seed={playerId} />
+          </div>
+        </div>
+      </div>
+      <p className="animate-rise font-serif-kr relative text-5xl font-black" style={{ animationDelay: "0.8s" }}>
+        {headline}
+      </p>
+      <p className="animate-rise relative font-mono text-xl font-bold text-gold-200" style={{ animationDelay: "1s" }}>
+        총 {entry.score.toLocaleString()}점 · {ranking.length}명 중
+      </p>
+    </section>
   );
 }
 

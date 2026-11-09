@@ -10,7 +10,7 @@ import { CharacterAvatar } from "../components/CharacterAvatar.tsx";
 import { HostQuestion, RoundResult } from "../components/HostRound.tsx";
 import { Leaderboard } from "../components/Leaderboard.tsx";
 import { MusicCredit } from "../components/MusicCredit.tsx";
-import { Podium } from "../components/Podium.tsx";
+import { FinalCeremony } from "../components/FinalCeremony.tsx";
 import { SoundToggle } from "../components/SoundToggle.tsx";
 import { sound } from "../audio/ClassicalBgmEngine.ts";
 
@@ -219,16 +219,7 @@ function HostRoomView({ room, onExit }: { room: HostRoom; onExit: () => void }) 
           </section>
         ))}
 
-      {state.status === "finished" && (
-        <section className="mx-auto w-full max-w-3xl flex-1 space-y-6 p-8 text-center">
-          <h2 className="font-serif-kr text-5xl font-extrabold">🏆 최종 순위</h2>
-          <Podium top={ranking.slice(0, 3)} />
-          {ranking.length > 3 && <Leaderboard entries={ranking.slice(3, 10)} />}
-          <button onClick={onExit} className="rounded-2xl bg-white/10 px-6 py-3 text-lg">
-            다른 퀴즈 진행하기
-          </button>
-        </section>
-      )}
+      {state.status === "finished" && <FinalCeremony ranking={ranking} onExit={onExit} />}
 
       {/* CC BY 4.0: 배경음악 출처 표기 (스크린에 길게 머무는 로비·최종 화면 아래에) */}
       {(state.status === "lobby" || state.status === "finished") && <MusicCredit className="px-4 pt-2 pb-4" />}
