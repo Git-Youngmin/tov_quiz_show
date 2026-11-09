@@ -1,14 +1,13 @@
 import { useEffect, useState } from "react";
 import { Link } from "react-router-dom";
 import { QRCodeSVG } from "qrcode.react";
-import { choiceCountOf, type AnswerIndex, type QuizSummary } from "@tob/shared";
+import type { QuizSummary } from "@tob/shared";
 import { api } from "../lib/api.ts";
 import { joinUrl } from "../lib/config.ts";
 import { rankPlayers } from "../lib/ranking.ts";
-import { useCountdown } from "../lib/useCountdown.ts";
 import { useRoom } from "../lib/useRoom.ts";
-import { AnswerButton } from "../components/AnswerButton.tsx";
 import { CharacterAvatar } from "../components/CharacterAvatar.tsx";
+import { HostQuestion, RoundResult } from "../components/HostRound.tsx";
 import { Leaderboard } from "../components/Leaderboard.tsx";
 import { Podium } from "../components/Podium.tsx";
 import { SoundToggle } from "../components/SoundToggle.tsx";
@@ -191,46 +190,33 @@ function HostRoomView({ room, onExit }: { room: HostRoom; onExit: () => void }) 
       {state.status === "playing" && r.hostQuestion && (
         <HostQuestion
           q={r.hostQuestion}
+          total={state.totalQuestions}
           answered={r.answerCount?.answered ?? 0}
-          total={r.answerCount?.total ?? players.filter(([, p]) => p.connected).length}
+          connected={r.answerCount?.total ?? players.filter(([, p]) => p.connected).length}
           onSkip={() => r.send({ type: "host:skip" })}
         />
       )}
 
-      {state.status === "leaderboard" && (
-        <section className="mx-auto w-full max-w-4xl flex-1 space-y-6 p-8">
-          {r.result && r.hostQuestion && (
-            <div>
-              <h2 className="mb-4 text-3xl font-bold">{r.hostQuestion.question.text}</h2>
-              <div className="grid grid-cols-2 gap-3">
-                {r.hostQuestion.question.choices.slice(0, choiceCountOf(r.hostQuestion.question.type)).map((c, i) => (
-                  <AnswerButton
-                    key={i}
-                    kind={r.hostQuestion!.question.type}
-                    index={i as AnswerIndex}
-                    disabled
-                    dimmed={i !== r.result!.answerIndex}
-                  >
-                    {i === r.result!.answerIndex && "✓ "}
-                    {r.hostQuestion!.question.type === "ox" ? "" : `${c} · `}
-                    {r.result!.distribution[i]}명
-                  </AnswerButton>
-                ))}
-              </div>
+      {state.status === "leaderboard" &&
+        (r.result && r.hostQuestion ? (
+          <RoundResult
+            q={r.hostQuestion}
+            result={r.result}
+            isLast={state.currentQuestionIndex + 1 >= state.totalQuestions}
+            onNext={() => r.send({ type: "host:next" })}
+          />
+        ) : (
+          // 결과 화면 도중에 진행 화면을 새로고침한 경우: 연출 없이 순위만 보여 주고 이어서 진행
+          <section className="mx-auto w-full max-w-4xl flex-1 space-y-6 p-8">
+            <div className="flex items-center justify-between">
+              <h2 className="text-3xl font-bold">순위</h2>
+              <button onClick={() => r.send({ type: "host:next" })} className="btn-gold rounded-2xl px-8 py-4 text-2xl font-black">
+                {state.currentQuestionIndex + 1 < state.totalQuestions ? "다음 문제 ▶" : "최종 결과 ▶"}
+              </button>
             </div>
-          )}
-          <div className="flex items-center justify-between">
-            <h2 className="text-3xl font-bold">순위</h2>
-            <button
-              onClick={() => r.send({ type: "host:next" })}
-              className="rounded-2xl bg-gold-400 px-8 py-4 text-2xl font-black text-navy-950"
-            >
-              {state.currentQuestionIndex + 1 < state.totalQuestions ? "다음 문제 ▶" : "최종 결과 ▶"}
-            </button>
-          </div>
-          <Leaderboard entries={ranking.slice(0, 5)} />
-        </section>
-      )}
+            <Leaderboard entries={ranking.slice(0, 5)} />
+          </section>
+        ))}
 
       {state.status === "finished" && (
         <section className="mx-auto w-full max-w-3xl flex-1 space-y-6 p-8 text-center">
@@ -243,48 +229,6 @@ function HostRoomView({ room, onExit }: { room: HostRoom; onExit: () => void }) 
         </section>
       )}
     </main>
-  );
-}
-
-function HostQuestion({
-  q,
-  answered,
-  total,
-  onSkip,
-}: {
-  q: NonNullable<ReturnType<typeof useRoom>["hostQuestion"]>;
-  answered: number;
-  total: number;
-  onSkip: () => void;
-}) {
-  const left = useCountdown(q.endsAt);
-
-  useEffect(() => {
-    if (left <= 5 && left > 0) {
-      sound.playTick();
-    }
-  }, [left]);
-
-  return (
-    <section className="flex flex-1 flex-col gap-6 p-8">
-      <h2 className="rounded-3xl bg-white p-8 text-center text-4xl font-bold text-navy-950 sm:text-5xl">{q.question.text}</h2>
-      <div className="flex items-center justify-between text-3xl font-bold">
-        <span className="grid size-24 place-items-center rounded-full bg-navy-600 text-5xl">{left}</span>
-        <span>
-          응답 {answered} / {total}
-        </span>
-        <button onClick={onSkip} className="rounded-xl bg-white/10 px-4 py-2 text-lg">
-          마감하기
-        </button>
-      </div>
-      <div className="grid flex-1 grid-cols-2 gap-4">
-        {q.question.choices.slice(0, choiceCountOf(q.question.type)).map((c, i) => (
-          <AnswerButton key={i} kind={q.question.type} index={i as AnswerIndex} disabled>
-            {q.question.type === "ox" ? "" : c}
-          </AnswerButton>
-        ))}
-      </div>
-    </section>
   );
 }
 

@@ -64,6 +64,19 @@ const hq = await host.next((m) => m.type === "question:host");
 const pq = await a.next((m) => m.type === "question:player");
 assert(typeof hq.question.text === "string" && !("answerIndex" in hq.question), "진행자는 문제 텍스트 수신 (정답 숨김)");
 assert(!("question" in pq) && pq.choiceCount === (hq.question.type === "ox" ? 2 : 4), `참가자는 텍스트 없이 버튼 정보만 수신 (${hq.question.type === "ox" ? "O/X 2버튼" : "4버튼"})`);
+const sleep = (ms) => new Promise((r) => setTimeout(r, ms));
+/** 소개 + 3-2-1 카운트다운이 끝날 때까지 기다림 (서버가 알려 준 시각 기준) */
+const untilStart = (m) => sleep(Math.max(0, m.startsAt - m.now) + 150);
+
+const intro = pq.startsAt - pq.now;
+assert(intro > 3000 && intro <= 4100 && hq.startsAt === pq.startsAt, `문제 시작 전 카운트다운 약 ${(intro / 1000).toFixed(1)}초 (진행 화면·폰이 같은 시작 시각)`);
+assert(pq.questionType === hq.question.type, `폰도 문제 유형을 앎 (${pq.questionType === "ox" ? "O/X" : "4지선다"})`);
+
+// 카운트다운 중에는 진행자의 마감도, 참가자의 답도 받지 않는다
+host.send({ type: "host:skip" });
+a.send({ type: "answer", questionIndex: 0, choice: 0 });
+assert(await a.next((m) => m.type === "answer:ack", 600).then(() => false, () => true), "카운트다운 중 보낸 답/마감은 무시됨");
+await untilStart(pq);
 if (hq.question.type === "ox") {
   a.send({ type: "answer", questionIndex: 0, choice: 3 }); // O/X 문제에 없는 버튼 → 무시되어야 함 (아래 분포 검사로 확인)
 }
@@ -71,7 +84,7 @@ if (hq.question.type === "ox") {
 for (let i = 0; i < quiz.questionCount; i++) {
   if (i > 0) {
     host.send({ type: "host:next" });
-    await a.next((m) => m.type === "question:player" && m.index === i);
+    await untilStart(await a.next((m) => m.type === "question:player" && m.index === i));
   }
   // 정답을 모르므로 a 는 0번, b 는 1번 → 결과 확인
   a.send({ type: "answer", questionIndex: i, choice: 0 });
@@ -79,7 +92,11 @@ for (let i = 0; i < quiz.questionCount; i++) {
   const res = await host.next((m) => m.type === "question:result" && m.index === i);
   const ra = await a.next((m) => m.type === "result:player" && m.index === i);
   assert(res.distribution[0] === 1 && res.distribution[1] === 1, `Q${i + 1} 전원 응답 → 즉시 마감, 분포 확인`);
-  assert(ra.correct === (res.answerIndex === 0) && (ra.correct ? ra.points >= 500 : ra.points === 0), `Q${i + 1} 요셉 ${ra.correct ? "정답" : "오답"} +${ra.points} (${ra.rank}등, 🔥${ra.streak})`);
+  assert(ra.correct === (res.answerIndex === 0) && (ra.correct ? ra.points >= 500 && ra.points <= 1000 : ra.points === 0), `Q${i + 1} 요셉 ${ra.correct ? "정답" : "오답"} +${ra.points} (${ra.prevRank}등 → ${ra.rank}등)`);
+  assert(!("bonus" in ra) && !("streak" in ra), `Q${i + 1} 연속 정답 보너스 없음 (정답은 최대 1000점)`);
+  if (i === 0) assert(ra.prevRank === ra.rank, "첫 라운드는 모두 0점에서 출발 → 순위가 오르내린 것으로 표시하지 않음");
+  const me = res.board.find((e) => e.playerId === ra.playerId || e.nickname === "요셉");
+  assert(me && me.score - me.prevScore === ra.points && me.prevRank === ra.prevRank && me.rank === ra.rank, `Q${i + 1} 점수판에 이전/이후 점수·순위가 들어 있음`);
 }
 host.send({ type: "host:next" });
 const fin = await host.next((m) => m.type === "state" && m.state.status === "finished");

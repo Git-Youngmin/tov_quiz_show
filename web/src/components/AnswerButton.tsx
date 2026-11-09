@@ -21,6 +21,7 @@ export function AnswerButton({
   onClick,
   disabled,
   dimmed,
+  className = "",
   children,
 }: {
   kind?: "choice" | "ox";
@@ -28,6 +29,8 @@ export function AnswerButton({
   onClick?: () => void;
   disabled?: boolean;
   dimmed?: boolean;
+  /** 크기/모양을 화면마다 다르게 하고 싶을 때 (예: O/X 를 정사각형으로) */
+  className?: string;
   children?: ReactNode;
 }) {
   const s = kind === "ox" ? OX_STYLES[index as 0 | 1] : ANSWER_STYLES[index];
@@ -39,7 +42,7 @@ export function AnswerButton({
       aria-label={kind === "ox" ? s.label : `${index + 1}번 ${s.label}`}
       className={`${s.bg} flex items-center gap-4 ${children ? "" : "justify-center"} rounded-2xl p-4 text-left font-bold text-white shadow-[0_6px_0_rgba(0,0,0,0.25)] transition active:translate-y-1 active:shadow-none disabled:cursor-default ${
         dimmed ? "opacity-30" : ""
-      }`}
+      } ${className}`}
     >
       <span className={`drop-shadow ${children ? "text-4xl" : "text-7xl"}`} aria-hidden>
         {s.icon}

@@ -63,6 +63,14 @@ export type AnswerIndex = 0 | 1 | 2 | 3;
 
 export const isPin = (v: unknown): v is string => typeof v === "string" && /^\d{6}$/.test(v);
 
+/**
+ * 문제가 나오기 전 소개 + 카운트다운 시간(ms). 앞 1초는 "O/X 퀴즈!" 같은 유형 소개, 뒤 3초는 3-2-1.
+ * 제한 시간은 이 시간이 지난 뒤(startsAt)부터 흐른다.
+ */
+export const QUESTION_INTRO_MS = 4000;
+/** 점수판에 보여 줄 최대 인원 */
+export const BOARD_SIZE = 7;
+
 // ───────────────────────── 방 상태 (WebSocket 메모리) ─────────────────────────
 
 export type RoomStatus = "lobby" | "playing" | "leaderboard" | "finished";
@@ -71,7 +79,6 @@ export interface PlayerState {
   nickname: string;
   character: Character;
   score: number;
-  streak: number;
   connected: boolean;
 }
 
@@ -111,7 +118,17 @@ export interface RankEntry {
   nickname: string;
   character: Character;
   score: number;
-  streak: number;
+  rank: number;
+}
+
+/** 라운드 점수판 한 줄: 이전 점수·순위 → 이번 라운드 후 점수·순위 (순위가 뒤바뀌는 연출용) */
+export interface BoardEntry {
+  playerId: string;
+  nickname: string;
+  character: Character;
+  prevScore: number;
+  score: number;
+  prevRank: number;
   rank: number;
 }
 
@@ -155,9 +172,27 @@ export type ServerMessage =
   | { type: "error"; message: string }
   | { type: "state"; state: RoomState }
   /** 진행자에게만: 문제 전체 (텍스트·보기 포함) */
-  | { type: "question:host"; index: number; question: Omit<Question, "answerIndex">; endsAt: number }
+  | {
+      type: "question:host";
+      index: number;
+      question: Omit<Question, "answerIndex">;
+      /** 소개/카운트다운이 끝나고 답을 받기 시작하는 시각, 그리고 마감 시각 (서버 시계, ms) */
+      startsAt: number;
+      endsAt: number;
+      /** 보낸 순간의 서버 시계 — 화면마다 시계가 달라도 카운트다운을 맞추기 위한 값 */
+      now: number;
+    }
   /** 참가자에게: 텍스트 없이 버튼 리모컨용 정보만 */
-  | { type: "question:player"; index: number; choiceCount: 2 | 4; timeLimitSec: number; endsAt: number }
+  | {
+      type: "question:player";
+      index: number;
+      questionType: QuestionType;
+      choiceCount: 2 | 4;
+      timeLimitSec: number;
+      startsAt: number;
+      endsAt: number;
+      now: number;
+    }
   /** 진행자에게: 응답 수 갱신 */
   | { type: "answer:count"; answered: number; total: number }
   /** 참가자 본인에게: 제출 접수 */
@@ -169,7 +204,8 @@ export type ServerMessage =
       answerIndex: AnswerIndex;
       /** 보기별 선택 인원 */
       distribution: [number, number, number, number];
-      leaderboard: RankEntry[];
+      /** 이번 라운드 점수판 (새 순위 기준 상위 BOARD_SIZE 명, 이전 점수·순위 포함) */
+      board: BoardEntry[];
     }
   /** 문제 마감 후 참가자 본인에게 */
   | {
@@ -178,9 +214,9 @@ export type ServerMessage =
       correct: boolean;
       answered: boolean;
       points: number;
-      bonus: number;
+      prevScore: number;
       totalScore: number;
-      streak: number;
+      prevRank: number;
       rank: number;
       totalPlayers: number;
     }

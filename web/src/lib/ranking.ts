@@ -10,6 +10,6 @@ export function rankPlayers(state: RoomState): RankEntry[] {
       rank = i + 1;
       prev = p.score;
     }
-    return { playerId, nickname: p.nickname, character: p.character, score: p.score, streak: p.streak, rank };
+    return { playerId, nickname: p.nickname, character: p.character, score: p.score, rank };
   });
 }

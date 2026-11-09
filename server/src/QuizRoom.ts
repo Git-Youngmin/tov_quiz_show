@@ -1,18 +1,21 @@
 /**
  * QuizRoom — PIN 하나당 Durable Object 하나. 방의 모든 상태를 메모리에 들고 WebSocket 으로 브로드캐스트한다.
  *
- * 상태 전이:  lobby ─host:start→ playing ─(시간 종료 / 전원 응답 / host:skip)→ leaderboard
+ * 상태 전이:  lobby ─host:start→ playing[소개·3-2-1 → 답 받기] ─(시간 종료 / 전원 응답 / host:skip)→ leaderboard
  *                                   ↑                                         │
  *                                   └──────────────── host:next ──────────────┘ (마지막 문제 뒤엔 finished)
  */
 import { Server, type Connection, type ConnectionContext, type WSMessage } from "partyserver";
 import {
+  BOARD_SIZE,
   MAX_PLAYERS,
+  QUESTION_INTRO_MS,
   choiceCountOf,
   NICKNAME_MAX,
   isCharacter,
   scoreAnswer,
   type AnswerIndex,
+  type BoardEntry,
   type ClientMessage,
   type Question,
   type RankEntry,
@@ -25,7 +28,6 @@ import type { Env } from "./env.ts";
 
 /** 네트워크 지연을 감안해 제한 시간 뒤 조금 더 기다렸다가 마감 */
 const GRACE_MS = 500;
-const LEADERBOARD_SIZE = 10;
 
 interface PendingAnswer {
   choice: AnswerIndex;
@@ -40,6 +42,7 @@ export class QuizRoom extends Server<Env> {
   private record: RoomRecord | null = null;
   private questions: Question[] = [];
   private answers = new Map<string, PendingAnswer>();
+  /** 소개/카운트다운이 끝나 답을 받기 시작하는 시각 (응답 시간은 여기서부터 잰다) */
   private questionStartedAt = 0;
   private questionEndsAt = 0;
   private gameStartedAt = 0;
@@ -123,7 +126,8 @@ export class QuizRoom extends Server<Env> {
         if (isHost && this.room.status === "lobby") this.startGame(conn);
         return;
       case "host:skip":
-        if (isHost && this.room.status === "playing") this.endQuestion();
+        // 카운트다운(소개) 중에는 마감할 수 없다
+        if (isHost && this.room.status === "playing" && Date.now() >= this.questionStartedAt) this.endQuestion();
         return;
       case "host:next":
         if (isHost && this.room.status === "leaderboard") this.nextQuestion();
@@ -152,7 +156,7 @@ export class QuizRoom extends Server<Env> {
 
     this.room.players[conn.id] = existing
       ? { ...existing, nickname, character, connected: true }
-      : { nickname, character, score: 0, streak: 0, connected: true };
+      : { nickname, character, score: 0, connected: true };
     this.broadcastState();
     if (this.room.status === "playing" && !this.answers.has(conn.id)) this.sendQuestionTo(conn, "player");
   }
@@ -162,8 +166,10 @@ export class QuizRoom extends Server<Env> {
     if (!this.room.players[conn.id] || this.answers.has(conn.id)) return;
     if (choice !== 0 && choice !== 1 && choice !== 2 && choice !== 3) return;
     if (choice >= choiceCountOf(this.questions[questionIndex].type)) return; // O/X 문제에 3·4번 버튼은 없음
+    const now = Date.now();
+    if (now < this.questionStartedAt) return; // 카운트다운 중에는 답을 받지 않는다
 
-    this.answers.set(conn.id, { choice, responseMs: Date.now() - this.questionStartedAt });
+    this.answers.set(conn.id, { choice, responseMs: now - this.questionStartedAt });
     this.send(conn, { type: "answer:ack", questionIndex, choice });
 
     const total = this.connectedPlayerIds().length;
@@ -202,7 +208,9 @@ export class QuizRoom extends Server<Env> {
     this.room.status = "playing";
     this.room.currentQuestionIndex = index;
     this.answers.clear();
-    this.questionStartedAt = Date.now();
+    // 먼저 소개 + 3-2-1 카운트다운(QUESTION_INTRO_MS)을 보여 주고, 제한 시간은 그 뒤부터 흐른다
+    const now = Date.now();
+    this.questionStartedAt = now + QUESTION_INTRO_MS;
     this.questionEndsAt = this.questionStartedAt + q.timeLimitSec * 1000;
 
     this.broadcastState();
@@ -211,7 +219,7 @@ export class QuizRoom extends Server<Env> {
       if (this.room.players[c.id]) this.sendQuestionTo(c, "player");
     }
     this.clearTimer();
-    this.timer = setTimeout(() => this.endQuestion(), q.timeLimitSec * 1000 + GRACE_MS);
+    this.timer = setTimeout(() => this.endQuestion(), this.questionEndsAt - now + GRACE_MS);
   }
 
   private endQuestion() {
@@ -220,33 +228,37 @@ export class QuizRoom extends Server<Env> {
     const index = this.room.currentQuestionIndex;
     const q = this.questions[index];
     const distribution: [number, number, number, number] = [0, 0, 0, 0];
-    const perPlayer = new Map<string, { answered: boolean; correct: boolean; points: number; bonus: number }>();
+    const perPlayer = new Map<string, { answered: boolean; correct: boolean; points: number }>();
+
+    // 점수를 올리기 전의 순위 (점수판에서 "이전 → 이번" 으로 바뀌는 연출용)
+    const before = new Map(this.ranking().map((r) => [r.playerId, r]));
 
     for (const [id, player] of Object.entries(this.room.players)) {
       const a = this.answers.get(id);
       if (a) distribution[a.choice]++;
       const correct = a?.choice === q.answerIndex;
-      const s = scoreAnswer({
-        correct,
-        responseMs: a?.responseMs ?? 0,
-        timeLimitMs: q.timeLimitSec * 1000,
-        prevStreak: player.streak,
-      });
-      player.score += s.points;
-      player.streak = s.streak;
-      perPlayer.set(id, { answered: !!a, correct, points: s.points, bonus: s.bonus });
+      const points = scoreAnswer({ correct, responseMs: a?.responseMs ?? 0, timeLimitMs: q.timeLimitSec * 1000 });
+      player.score += points;
+      perPlayer.set(id, { answered: !!a, correct, points });
     }
 
     this.room.status = "leaderboard";
     const ranking = this.ranking();
+    // 모두 같은 점수에서 출발한 첫 라운드는 "공동 1등"일 뿐이라 순위가 오르내린 게 아니다 → 변동 없음으로 처리
+    const beforeScores = [...before.values()].map((r) => r.score);
+    const allTied = beforeScores.every((s) => s === beforeScores[0]);
+    const prevRankOf = (id: string, fallback: number) => (allTied ? fallback : (before.get(id)?.rank ?? fallback));
+    const board: BoardEntry[] = ranking.slice(0, BOARD_SIZE).map((r) => ({
+      playerId: r.playerId,
+      nickname: r.nickname,
+      character: r.character,
+      prevScore: before.get(r.playerId)?.score ?? r.score,
+      score: r.score,
+      prevRank: prevRankOf(r.playerId, r.rank),
+      rank: r.rank,
+    }));
     this.broadcastState();
-    this.broadcastMsg({
-      type: "question:result",
-      index,
-      answerIndex: q.answerIndex,
-      distribution,
-      leaderboard: ranking.slice(0, LEADERBOARD_SIZE),
-    });
+    this.broadcastMsg({ type: "question:result", index, answerIndex: q.answerIndex, distribution, board });
     for (const r of ranking) {
       const conn = this.getConnection(r.playerId);
       const p = perPlayer.get(r.playerId);
@@ -255,8 +267,9 @@ export class QuizRoom extends Server<Env> {
         type: "result:player",
         index,
         ...p,
+        prevScore: before.get(r.playerId)?.score ?? r.score,
         totalScore: r.score,
-        streak: r.streak,
+        prevRank: prevRankOf(r.playerId, r.rank),
         rank: r.rank,
         totalPlayers: ranking.length,
       });
@@ -289,14 +302,24 @@ export class QuizRoom extends Server<Env> {
     if (!q) return;
     if (role === "host") {
       const { answerIndex: _hidden, ...publicQuestion } = q;
-      this.send(conn, { type: "question:host", index, question: publicQuestion, endsAt: this.questionEndsAt });
+      this.send(conn, {
+        type: "question:host",
+        index,
+        question: publicQuestion,
+        startsAt: this.questionStartedAt,
+        endsAt: this.questionEndsAt,
+        now: Date.now(),
+      });
     } else {
       this.send(conn, {
         type: "question:player",
         index,
+        questionType: q.type,
         choiceCount: choiceCountOf(q.type),
         timeLimitSec: q.timeLimitSec,
+        startsAt: this.questionStartedAt,
         endsAt: this.questionEndsAt,
+        now: Date.now(),
       });
     }
   }
@@ -311,7 +334,7 @@ export class QuizRoom extends Server<Env> {
         rank = i + 1;
         prevScore = p.score;
       }
-      return { playerId, nickname: p.nickname, character: p.character, score: p.score, streak: p.streak, rank };
+      return { playerId, nickname: p.nickname, character: p.character, score: p.score, rank };
     });
   }
 

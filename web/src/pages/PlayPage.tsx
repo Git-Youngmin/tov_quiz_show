@@ -11,10 +11,12 @@ import {
 import { api } from "../lib/api.ts";
 import { getPlayerId, loadProfile, saveProfile, type Profile } from "../lib/storage.ts";
 import { rankPlayers } from "../lib/ranking.ts";
-import { useCountdown } from "../lib/useCountdown.ts";
-import { useRoom } from "../lib/useRoom.ts";
+import { useServerNow } from "../lib/useCountdown.ts";
+import { useCountUp } from "../lib/useCountUp.ts";
+import { useRoom, type RoomView } from "../lib/useRoom.ts";
 import { AnswerButton } from "../components/AnswerButton.tsx";
-import { COLOR_HEX, COLOR_LABEL, CharacterAvatar, SHAPE_NICK } from "../components/CharacterAvatar.tsx";
+import { COLOR_HEX, COLOR_LABEL, CharacterAvatar, SHAPE_NICK, type Mood } from "../components/CharacterAvatar.tsx";
+import { QuestionIntro, TYPE_LABEL } from "../components/QuestionIntro.tsx";
 import { SoundToggle } from "../components/SoundToggle.tsx";
 import { sound } from "../audio/ClassicalBgmEngine.ts";
 
@@ -257,6 +259,7 @@ function PlayerGame({ pin, profile, onEditProfile }: { pin: string; profile: Pro
         (r.playerQuestion && !r.myAnswer ? (
           <Remote
             q={r.playerQuestion}
+            total={state.totalQuestions}
             onAnswer={(choice) => r.send({ type: "answer", questionIndex: r.playerQuestion!.index, choice })}
           />
         ) : r.myAnswer ? (
@@ -271,27 +274,7 @@ function PlayerGame({ pin, profile, onEditProfile }: { pin: string; profile: Pro
 
       {state.status === "leaderboard" &&
         (r.myResult ? (
-          <section
-            className={`flex flex-1 flex-col items-center justify-center gap-3 text-center ${
-              r.myResult.correct ? "bg-green-600/75" : "bg-red-600/75"
-            }`}
-          >
-            <CharacterAvatar
-              character={me.character}
-              size={170}
-              mood={r.myResult.correct ? "cheer" : r.myResult.answered ? "sad" : "sleepy"}
-              seed={playerId}
-              popIn
-            />
-            <p className="text-5xl font-black">
-              {r.myResult.correct ? "정답! 🎉" : r.myResult.answered ? "아쉬워요 😢" : "시간 초과 ⏰"}
-            </p>
-            {r.myResult.correct && <p className="text-3xl font-bold">+{r.myResult.points.toLocaleString()}</p>}
-            {r.myResult.bonus > 0 && <p className="text-xl">🔥 {r.myResult.streak}연속 정답 보너스 +{r.myResult.bonus}</p>}
-            <p className="mt-4 rounded-full bg-black/20 px-6 py-2 text-xl">
-              현재 {r.myResult.rank}등 / {r.myResult.totalPlayers}명
-            </p>
-          </section>
+          <PlayerResult res={r.myResult} character={me.character} seed={playerId} />
         ) : (
           <Center title="결과 집계 중…" />
         ))}
@@ -307,41 +290,108 @@ function PlayerGame({ pin, profile, onEditProfile }: { pin: string; profile: Pro
   );
 }
 
-/** 문제 텍스트 없이 4색 버튼만 */
+/**
+ * 문제 텍스트 없이 4색(또는 O/X) 버튼만.
+ * 맨 앞에 "O/X 퀴즈!" 소개와 3-2-1 카운트다운이 나오고, 그동안 버튼은 눌리지 않는다.
+ */
 function Remote({
   q,
+  total,
   onAnswer,
 }: {
-  q: NonNullable<ReturnType<typeof useRoom>["playerQuestion"]>;
+  q: NonNullable<RoomView["playerQuestion"]>;
+  total: number;
   onAnswer: (choice: AnswerIndex) => void;
 }) {
-  const left = useCountdown(q.endsAt);
+  const now = useServerNow(100);
+  const started = now >= q.startsAt;
+  const msLeft = Math.max(0, q.endsAt - now);
+  const left = Math.min(q.timeLimitSec, Math.ceil(msLeft / 1000));
+  const pct = started ? Math.min(100, (msLeft / (q.timeLimitSec * 1000)) * 100) : 100;
+  const urgent = started && left <= 3;
 
   useEffect(() => {
-    if (left <= 5 && left > 0) {
-      sound.playTick();
-    }
-  }, [left]);
+    if (started && left <= 5 && left > 0) sound.playTick();
+  }, [started, left]);
 
   return (
     <section className="flex flex-1 flex-col gap-3 p-3">
-      <p className="text-center text-lg font-bold">
-        {q.index + 1}번 문제 · {left}초
-      </p>
+      <QuestionIntro startsAt={q.startsAt} number={q.index + 1} total={total} type={q.questionType} />
+
+      <div className="flex items-center justify-between gap-2 px-1">
+        <span className="rounded-full bg-navy-600 px-3 py-1 text-sm font-bold">
+          {q.index + 1} / {total}
+        </span>
+        <span className="rounded-full bg-white/10 px-3 py-1 text-sm font-bold">{TYPE_LABEL[q.questionType]}</span>
+        <span className={`text-xl font-black tabular-nums ${urgent ? "text-red-300" : ""}`}>{left}초</span>
+      </div>
+      <div className="h-3 overflow-hidden rounded-full bg-white/10">
+        <div className={`time-bar h-full rounded-full ${urgent ? "bg-red-400" : "bg-gold-400"}`} style={{ width: `${pct}%` }} />
+      </div>
+
       {q.choiceCount === 2 ? (
-        // O/X 문제: 큼직한 버튼 2개
-        <div className="grid flex-1 grid-cols-2 gap-3">
-          {([0, 1] as const).map((i) => (
-            <AnswerButton key={i} kind="ox" index={i} onClick={() => onAnswer(i)} />
-          ))}
+        // O/X 문제: 선택지가 2개뿐이라 화면 전체를 쓰지 않고 큼직한 정사각형 두 개
+        <div className="flex flex-1 items-center">
+          <div className="grid w-full grid-cols-2 gap-4">
+            {([0, 1] as const).map((i) => (
+              <AnswerButton key={i} kind="ox" index={i} disabled={!started} onClick={() => onAnswer(i)} className="aspect-square" />
+            ))}
+          </div>
         </div>
       ) : (
         <div className="grid flex-1 grid-cols-2 grid-rows-2 gap-3">
           {([0, 1, 2, 3] as const).map((i) => (
-            <AnswerButton key={i} index={i} onClick={() => onAnswer(i)} />
+            <AnswerButton key={i} index={i} disabled={!started} onClick={() => onAnswer(i)} />
           ))}
         </div>
       )}
+    </section>
+  );
+}
+
+/**
+ * 라운드 결과 (폰).
+ *  정답/오답 → 점수가 이전 점수에서 올라가고 → 잠시 뒤 순위가 이전 순위에서 새 순위로 바뀌며
+ *  오르면 폴짝폴짝 ▲, 내리면 풀이 죽어서 ▼ 로 알려 줌
+ */
+function PlayerResult({ res, character, seed }: { res: NonNullable<RoomView["myResult"]>; character: Character; seed: string }) {
+  const [settled, setSettled] = useState(false);
+  useEffect(() => {
+    setSettled(false);
+    const t = setTimeout(() => setSettled(true), 1200);
+    return () => clearTimeout(t);
+  }, [res]);
+
+  const score = useCountUp(res.prevScore, res.totalScore, true, 1100);
+  const delta = res.prevRank - res.rank; // + 면 순위 상승
+  const shownRank = settled ? res.rank : res.prevRank;
+  const baseMood: Mood = res.correct ? "cheer" : res.answered ? "sad" : "sleepy";
+  const mood: Mood = settled ? (delta > 0 ? "cheer" : delta < 0 ? "sad" : baseMood) : baseMood;
+  const fx = settled && delta !== 0 ? (delta > 0 ? "fx-rise" : "fx-fall") : "";
+
+  return (
+    <section className={`flex flex-1 flex-col items-center justify-center gap-3 px-4 text-center ${res.correct ? "bg-green-600/75" : "bg-red-600/75"}`}>
+      <div className={fx}>
+        <CharacterAvatar character={character} size={160} mood={mood} seed={seed} popIn />
+      </div>
+      <p className="text-5xl font-black">{res.correct ? "정답! 🎉" : res.answered ? "아쉬워요 😢" : "시간 초과 ⏰"}</p>
+      {res.correct && <p className="gain-badge text-3xl font-black text-white">+{res.points.toLocaleString()}</p>}
+      <p className="font-mono text-xl font-bold tabular-nums text-white/90">총 {score.toLocaleString()}점</p>
+
+      <div className="mt-2 flex items-center gap-3 rounded-full bg-black/25 px-6 py-2">
+        <span key={shownRank} className={`text-3xl font-black ${settled ? "rank-badge" : ""}`}>
+          {shownRank}등
+        </span>
+        <span className="text-lg text-white/80">/ {res.totalPlayers}명</span>
+        {settled && delta !== 0 && (
+          <span key={`d${delta}`} className={`text-xl font-black ${delta > 0 ? "arrow-bounce-up text-green-200" : "arrow-bounce-down text-red-100"}`}>
+            {delta > 0 ? "▲" : "▼"}
+            {Math.abs(delta)}
+          </span>
+        )}
+      </div>
+      {settled && delta > 0 && <p className="rank-badge text-lg font-bold">순위가 올랐어요! 🚀</p>}
+      {settled && delta < 0 && <p className="rank-badge text-lg font-bold text-white/90">다음 문제에서 따라잡아요! 💪</p>}
     </section>
   );
 }

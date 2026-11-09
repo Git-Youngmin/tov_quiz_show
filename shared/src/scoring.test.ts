@@ -9,17 +9,13 @@ test("timeScore: 즉시 1000, 절반 750, 끝 500", () => {
   assert.equal(timeScore(99_000, 20_000), 500); // 초과 응답은 잘림
 });
 
-test("scoreAnswer: 오답은 0점, streak 초기화", () => {
-  assert.deepEqual(scoreAnswer({ correct: false, responseMs: 0, timeLimitMs: 20_000, prevStreak: 3 }), {
-    points: 0,
-    streak: 0,
-    bonus: 0,
-  });
+test("scoreAnswer: 오답/미응답은 0점", () => {
+  assert.equal(scoreAnswer({ correct: false, responseMs: 0, timeLimitMs: 20_000 }), 0);
 });
 
-test("scoreAnswer: 첫 정답은 보너스 없음, 두 번째부터 +100", () => {
-  const first = scoreAnswer({ correct: true, responseMs: 0, timeLimitMs: 20_000, prevStreak: 0 });
-  assert.deepEqual(first, { points: 1000, streak: 1, bonus: 0 });
-  const second = scoreAnswer({ correct: true, responseMs: 10_000, timeLimitMs: 20_000, prevStreak: 1 });
-  assert.deepEqual(second, { points: 850, streak: 2, bonus: 100 });
+test("scoreAnswer: 정답은 시간 비례 점수만 — 연속 정답 보너스 없음", () => {
+  assert.equal(scoreAnswer({ correct: true, responseMs: 0, timeLimitMs: 10_000 }), 1000);
+  // 몇 번째 연속 정답이든 같은 응답 시간이면 같은 점수
+  assert.equal(scoreAnswer({ correct: true, responseMs: 5_000, timeLimitMs: 10_000 }), 750);
+  assert.equal(scoreAnswer({ correct: true, responseMs: 5_000, timeLimitMs: 10_000 }), 750);
 });

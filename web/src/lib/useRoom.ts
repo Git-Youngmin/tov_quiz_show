@@ -1,6 +1,7 @@
 import { useCallback, useState } from "react";
 import usePartySocket from "partysocket/react";
 import type { ClientMessage, RoomState, ServerMessage } from "@tob/shared";
+import { syncServerClock } from "./clock.ts";
 import { API_HOST, PARTY_NAME } from "./config.ts";
 
 type Extract_<T extends ServerMessage["type"]> = Extract<ServerMessage, { type: T }>;
@@ -60,6 +61,8 @@ export function useRoom(opts: {
     },
     onMessage(event: MessageEvent) {
       const msg = JSON.parse(event.data as string) as ServerMessage;
+      // 카운트다운이 모든 화면에서 같이 가도록 서버 시계와의 차이를 기억
+      if (msg.type === "question:host" || msg.type === "question:player") syncServerClock(msg.now);
       setView((v) => reduce(v, msg));
     },
   });
