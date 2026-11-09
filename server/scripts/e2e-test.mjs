@@ -2,7 +2,6 @@
 //   cd server && npm run db:migrate:local && npm run dev   (다른 터미널)
 //   node scripts/e2e-test.mjs
 const BASE = process.env.BASE ?? "http://localhost:8787";
-const PASSWORD = process.env.ADMIN_PASSWORD ?? "tob1234";
 const WS = BASE.replace(/^http/, "ws");
 
 const assert = (cond, msg) => {
@@ -10,7 +9,7 @@ const assert = (cond, msg) => {
   console.log(`  ✓ ${msg}`);
 };
 
-const auth = { Authorization: `Bearer ${PASSWORD}`, "Content-Type": "application/json" };
+const auth = { "Content-Type": "application/json" };
 
 function connect(pin, query) {
   const ws = new WebSocket(`${WS}/parties/quiz-room/${pin}?${new URLSearchParams(query)}`);
@@ -34,7 +33,6 @@ function connect(pin, query) {
 }
 
 console.log("REST");
-assert((await fetch(`${BASE}/api/auth`, { method: "POST", headers: { Authorization: "Bearer nope" } })).status === 401, "잘못된 비밀번호 거부");
 const quizzes = await (await fetch(`${BASE}/api/quizzes`, { headers: auth })).json();
 assert(quizzes.length > 0 && quizzes[0].questionCount > 0, `퀴즈 목록 (${quizzes[0]?.title})`);
 const quiz = quizzes.find((q) => q.questionCount > 0);

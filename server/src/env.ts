@@ -7,7 +7,5 @@ export interface Env {
   DB: D1Database;
   /** PIN → RoomRecord */
   ROOMS: KVNamespace;
-  /** wrangler secret put ADMIN_PASSWORD */
-  ADMIN_PASSWORD: string;
   ALLOWED_ORIGINS: string;
 }

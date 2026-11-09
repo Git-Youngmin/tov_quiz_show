@@ -40,10 +40,3 @@ export function loadProfile(): Profile {
 export function saveProfile(p: Profile) {
   safe(() => localStorage.setItem("tob:profile", JSON.stringify(p)), undefined);
 }
-
-/** 진행자 비밀번호는 탭 단위로만 기억 */
-export const adminSession = {
-  get: () => safe(() => sessionStorage.getItem("tob:admin") ?? "", ""),
-  set: (pw: string) => safe(() => sessionStorage.setItem("tob:admin", pw), undefined),
-  clear: () => safe(() => sessionStorage.removeItem("tob:admin"), undefined),
-};

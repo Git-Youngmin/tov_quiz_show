@@ -1,5 +1,5 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
-import { Link, Navigate } from "react-router-dom";
+import { Link } from "react-router-dom";
 import {
   QUIZ_LIMITS,
   parseQuizText,
@@ -11,7 +11,6 @@ import {
   type QuizSummary,
 } from "@tob/shared";
 import { api } from "../lib/api.ts";
-import { adminSession } from "../lib/storage.ts";
 import { ANSWER_STYLES, OX_STYLES } from "../components/AnswerButton.tsx";
 
 interface DraftQuestion {
@@ -56,14 +55,12 @@ const toInput = (d: Draft): QuizInput => ({
   questions: d.questions.map(({ type, text, choices, answerIndex, timeLimitSec }) => ({ type, text, choices, answerIndex, timeLimitSec })),
 });
 
-/** /host/quizzes — 퀴즈 세트 만들기 · 수정 · 삭제 (진행자 전용) */
+/** /host/quizzes — 퀴즈 세트 만들기 · 수정 · 삭제 (운영자 혼자 쓰므로 로그인 없음) */
 export default function QuizEditorPage() {
-  const password = adminSession.get();
-  if (!password) return <Navigate to="/host" replace />;
-  return <Editor password={password} />;
+  return <Editor />;
 }
 
-function Editor({ password }: { password: string }) {
+function Editor() {
   const [quizzes, setQuizzes] = useState<QuizSummary[] | null>(null);
   const [draft, setDraft] = useState<Draft | null>(null);
   const [dirty, setDirty] = useState(false);
@@ -74,20 +71,15 @@ function Editor({ password }: { password: string }) {
   const [importText, setImportText] = useState("");
   const parsed = useMemo(() => parseQuizText(importText), [importText]);
 
-  const fail = useCallback((err: Error) => {
-    if (err.message === "Unauthorized") {
-      adminSession.clear();
-      window.location.assign("/host");
-    } else setNotice({ kind: "error", text: err.message });
-  }, []);
+  const fail = useCallback((err: Error) => setNotice({ kind: "error", text: err.message }), []);
 
   const refresh = useCallback(async () => {
     try {
-      setQuizzes(await api.listQuizzes(password));
+      setQuizzes(await api.listQuizzes());
     } catch (e) {
       fail(e as Error);
     }
-  }, [password, fail]);
+  }, [fail]);
 
   useEffect(() => {
     void refresh();
@@ -115,7 +107,7 @@ function Editor({ password }: { password: string }) {
     if (!confirmDiscard()) return;
     setNotice(null);
     try {
-      setDraft(toDraft(await api.getQuiz(password, id)));
+      setDraft(toDraft(await api.getQuiz(id)));
       setDirty(false);
     } catch (e) {
       fail(e as Error);
@@ -134,9 +126,9 @@ function Editor({ password }: { password: string }) {
     if (!checked.ok) return setNotice({ kind: "error", text: checked.error });
     setBusy(true);
     try {
-      const id = draft.id ?? (await api.createQuiz(password, checked.value)).id;
-      if (draft.id !== null) await api.updateQuiz(password, draft.id, checked.value);
-      setDraft(toDraft(await api.getQuiz(password, id))); // 서버에 저장된(다듬어진) 값으로 다시 표시
+      const id = draft.id ?? (await api.createQuiz(checked.value)).id;
+      if (draft.id !== null) await api.updateQuiz(draft.id, checked.value);
+      setDraft(toDraft(await api.getQuiz(id))); // 서버에 저장된(다듬어진) 값으로 다시 표시
       setDirty(false);
       setNotice({ kind: "ok", text: "저장했어요 ✓" });
       await refresh();
@@ -155,7 +147,7 @@ function Editor({ password }: { password: string }) {
     if (!ok) return;
     setBusy(true);
     try {
-      await api.deleteQuiz(password, draft.id);
+      await api.deleteQuiz(draft.id);
       setDraft(null);
       setDirty(false);
       setNotice({ kind: "ok", text: "삭제했어요" });
@@ -217,7 +209,7 @@ function Editor({ password }: { password: string }) {
         <div className="flex items-center justify-between">
           <h1 className="text-2xl font-bold">퀴즈 관리</h1>
           <Link to="/host" onClick={(e) => !confirmDiscard() && e.preventDefault()} className="text-sm text-mist underline">
-            ← 진행 화면
+            ← PLAY 화면으로
           </Link>
         </div>
         <button onClick={startNew} className="w-full rounded-xl bg-gold-400 py-3 font-bold text-navy-950">

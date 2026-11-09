@@ -1,5 +1,5 @@
-import { useMemo, useState, type FormEvent, type ReactNode } from "react";
-import { Link, useSearchParams } from "react-router-dom";
+import { useEffect, useMemo, useState, type FormEvent, type ReactNode } from "react";
+import { useSearchParams } from "react-router-dom";
 import {
   CHARACTER_COLORS,
   CHARACTER_SHAPES,
@@ -17,18 +17,41 @@ import { AnswerButton } from "../components/AnswerButton.tsx";
 import { COLOR_HEX, COLOR_LABEL, CharacterAvatar, SHAPE_NICK } from "../components/CharacterAvatar.tsx";
 
 /**
- * 참가자 플로우: PIN 입력(또는 QR 의 ?pin=) → 닉네임·캐릭터 → 대기 → 4색 리모컨 → 결과
+ * 참가자 입장 페이지 (카훗처럼 QR 로 바로 들어오는 독립된 페이지 — 홈으로 가는 링크 없음)
+ *   QR(/play?pin=123456) → PIN 이 맞으면 곧장 닉네임·캐릭터 → 대기 → 4색(또는 O/X) 리모컨 → 결과
+ *   PIN 없이 주소만 열었을 때만 PIN 입력 칸이 나온다.
  */
 export default function PlayPage() {
   const [params, setParams] = useSearchParams();
   const queryPin = params.get("pin");
   const [pin, setPin] = useState<string | null>(null);
   const [profile, setProfile] = useState<Profile | null>(null);
+  const [checking, setChecking] = useState(isPin(queryPin));
+  const [notFound, setNotFound] = useState(false);
 
+  // QR 로 들어왔으면 PIN 입력 단계를 건너뛰고 방이 있는지만 확인
+  useEffect(() => {
+    if (!isPin(queryPin)) return;
+    let alive = true;
+    void api.roomExists(queryPin).then((ok) => {
+      if (!alive) return;
+      if (ok) setPin(queryPin);
+      else setNotFound(true);
+      setChecking(false);
+    });
+    return () => {
+      alive = false;
+    };
+    // 처음 한 번만 확인
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
+
+  if (checking) return <Center title="입장하는 중…" />;
   if (!pin) {
     return (
       <PinEntry
         initialPin={isPin(queryPin) ? queryPin : ""}
+        initialError={notFound ? "방을 찾을 수 없어요. 스크린의 PIN 을 다시 확인해 주세요" : ""}
         onValid={(p) => {
           setPin(p);
           setParams({ pin: p }, { replace: true });
@@ -42,9 +65,9 @@ export default function PlayPage() {
 
 // ───────────────────────── 1. PIN 입력 ─────────────────────────
 
-function PinEntry({ initialPin, onValid }: { initialPin: string; onValid: (pin: string) => void }) {
+function PinEntry({ initialPin, initialError, onValid }: { initialPin: string; initialError: string; onValid: (pin: string) => void }) {
   const [value, setValue] = useState(initialPin);
-  const [error, setError] = useState("");
+  const [error, setError] = useState(initialError);
   const [busy, setBusy] = useState(false);
 
   const submit = async (e?: FormEvent) => {
@@ -78,9 +101,6 @@ function PinEntry({ initialPin, onValid }: { initialPin: string; onValid: (pin: 
         <button disabled={busy} className="w-full rounded-2xl bg-gold-400 py-4 text-xl font-bold text-navy-950 disabled:opacity-50">
           {busy ? "확인 중…" : "입장하기"}
         </button>
-        <Link to="/" className="block text-sm text-mist underline">
-          처음으로
-        </Link>
       </form>
     </main>
   );

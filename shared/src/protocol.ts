@@ -89,7 +89,7 @@ export interface RankEntry {
 
 // ───────────────────────── REST API ─────────────────────────
 
-/** POST /api/rooms  (Authorization: Bearer <ADMIN_PASSWORD>) */
+/** POST /api/rooms */
 export interface CreateRoomRequest {
   quizId: number;
 }

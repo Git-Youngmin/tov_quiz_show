@@ -1,7 +1,6 @@
 // 퀴즈 편집 API 스모크 테스트 (wrangler dev 실행 중이어야 함)  node scripts/quiz-crud-test.mjs
 const BASE = process.env.BASE ?? "http://localhost:8787";
-const PASSWORD = process.env.ADMIN_PASSWORD ?? "tob1234";
-const auth = { Authorization: `Bearer ${PASSWORD}`, "Content-Type": "application/json" };
+const auth = { "Content-Type": "application/json" };
 const ok = (cond, msg) => {
   if (!cond) throw new Error(`실패: ${msg}`);
   console.log(`  ✓ ${msg}`);
@@ -13,7 +12,6 @@ const ox = (text, answerIndex) => ({ type: "ox", text, choices: ["O", "X", "", "
 const choice = (text, answerIndex) => ({ type: "choice", text, choices: ["가", "나", "다", "라"], answerIndex, timeLimitSec: 20 });
 
 console.log("퀴즈 편집 API");
-ok((await call("POST", "/api/quizzes", {}, { "Content-Type": "application/json" })).status === 401, "비밀번호 없이는 401");
 ok((await call("POST", "/api/quizzes", { title: "", questions: [] })).status === 400, "빈 퀴즈는 400");
 const bad = await call("POST", "/api/quizzes", { title: "t", questions: [ox("문제", 3)] });
 ok(bad.status === 400 && (await bad.json()).error.includes("정답"), "O/X 문제의 정답 3은 거부");

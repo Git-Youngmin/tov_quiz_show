@@ -20,10 +20,10 @@
 
 | 경로 | 화면 |
 |---|---|
-| `/` | 투트랙: **문제 만들기**(출제자 → `/host`) / **PLAY**(참가자 → `/play`) |
-| `/host` | 관리자 로그인 → 퀴즈 세트 선택 → PIN·QR 로비 → [시작] · [마감] · [다음 문제] → 최종 순위 |
+| `/` | 운영자용 홈: **문제 만들기**(→ `/host/quizzes`) / **PLAY**(→ `/host`) |
+| `/host` | **PLAY** — 스크린에 띄우는 진행 화면: 퀴즈 고르기 → PIN·QR 로비 → [시작] · [마감] · [다음 문제] → 최종 순위 (로그인 없음) |
 | `/host/quizzes` | **퀴즈 편집**: 세트 만들기·수정·삭제, 문제 추가·복제·순서 변경, 단톡방 글 붙여넣기 가져오기 |
-| `/play?pin=123456` | PIN 입력(QR 이면 자동 채움) → 닉네임 + 캐릭터(모양 4 × 색 6) → 4색 리모컨 → 정답/등수 피드백 |
+| `/play?pin=123456` | **참가자 입장 페이지** (QR 로 바로 도착, 홈 링크 없음): PIN 자동 확인 → 닉네임 + 캐릭터 → 4색/O·X 리모컨 → 정답/등수 피드백. PIN 없이 열면 PIN 입력 칸이 나옴 |
 
 ## 디자인
 
@@ -47,6 +47,11 @@
 
   파서는 실제로 쓰던 퀴즈 17개(205문제)로 확인했고, 모두 경고 없이 읽혔습니다. (`shared/src/parse.ts`, 테스트는 `npm test`)
 
+## 운영 방식 (로그인 없음)
+
+운영자 한 사람이 쓰는 서비스라 **비밀번호/로그인이 없습니다.** 선생님은 `/` → PLAY 를 스크린에 띄우고, 학생들은 스크린의 QR 만 찍습니다. 방마다 발급되는 일회성 `hostToken` 으로 "진행자 권한"만 구분합니다.
+> 주소를 아는 사람은 `/host/quizzes` 에서 퀴즈를 고치거나 지울 수 있습니다. 걱정되면 코드 수정 없이 Cloudflare Access(무료)로 `/host*` 경로만 잠글 수 있습니다.
+
 ## 게임 규칙
 
 - 점수: $1000 \times \left(1 - \dfrac{t_{\text{응답}}}{t_{\text{제한}}} \cdot \dfrac{1}{2}\right)$ → 즉시 1000점, 마지막 순간 500점, 오답 0점
@@ -60,7 +65,6 @@
 
 ```bash
 npm install
-cp server/.dev.vars.example server/.dev.vars   # ADMIN_PASSWORD=tob1234
 npm run db:migrate:local                        # 로컬 D1 에 스키마 + 예시 퀴즈
 npm run dev:server                              # http://localhost:8787
 npm run dev:web                                 # http://localhost:5173 (다른 터미널)
@@ -75,7 +79,6 @@ cd server
 npx wrangler d1 create tob-quiz-db          # 출력된 database_id → wrangler.toml
 npx wrangler kv namespace create ROOMS      # 출력된 id → wrangler.toml
 npx wrangler d1 execute tob-quiz-db --remote --file=./schema.sql
-npx wrangler secret put ADMIN_PASSWORD
 npx wrangler deploy                         # → https://tob-quiz-server.<계정>.workers.dev
 ```
 

@@ -13,7 +13,7 @@ const CAST: { character: Character; mood: Mood; size: number }[] = [
 ];
 
 const STEPS = [
-  { n: "01", title: "스크린에 PIN · QR", body: "진행자가 방을 열면 큰 화면에 6자리 PIN 과 QR 코드가 떠요." },
+  { n: "01", title: "스크린에 PIN · QR", body: "PLAY 를 누르면 큰 화면에 QR 코드와 6자리 PIN 이 떠요. 친구들은 QR 을 찍기만 하면 돼요." },
   { n: "02", title: "내 캐릭터 고르기", body: "스마트폰으로 접속해서 닉네임을 쓰고, 모양 4가지 · 색 6가지로 나만의 친구를 만들어요." },
   { n: "03", title: "큼직한 버튼으로 정답!", body: "문제는 스크린에, 폰에는 큰 버튼만. 빨리 맞힐수록 점수가 높고 연속 정답은 보너스예요." },
 ];
@@ -27,9 +27,6 @@ export default function HomePage() {
           <small className="block text-[11px] tracking-[0.2em] text-mist">경원교회 중고등부</small>
           <strong className="text-2xl font-extrabold tracking-[0.12em]">토브</strong>
         </div>
-        <Link to="/host" className="rounded-full border border-white/20 px-4 py-2 text-sm text-mist transition hover:bg-white/10">
-          진행자 로그인
-        </Link>
       </header>
 
       <main className="flex-1">
@@ -56,20 +53,20 @@ export default function HomePage() {
         </section>
 
         <section className="mt-12 grid gap-4 sm:grid-cols-2">
-          <Link to="/host" className="glass animate-rise rounded-3xl p-7 text-center transition hover:bg-white/15" style={{ animationDelay: "0.3s" }}>
+          <Link to="/host/quizzes" className="glass animate-rise rounded-3xl p-7 text-center transition hover:bg-white/15" style={{ animationDelay: "0.3s" }}>
             <span className="block text-3xl" aria-hidden>
               ✏️
             </span>
             <span className="mt-2 block text-2xl font-extrabold">문제 만들기</span>
-            <span className="mt-1 block text-sm text-mist">출제자용 · 퀴즈를 만들고 진행해요</span>
+            <span className="mt-1 block text-sm text-mist">퀴즈를 만들고 고쳐요 · 단톡방 글 붙여넣기도 OK</span>
           </Link>
-          {/* 폰으로 들어오는 학생이 가장 많으니 모바일에서는 PLAY 가 맨 위 */}
-          <Link to="/play" className="btn-gold animate-rise order-first rounded-3xl p-7 text-center sm:order-none" style={{ animationDelay: "0.24s" }}>
+          {/* PLAY = 스크린에 띄우는 진행 화면. 참가자는 여기를 거치지 않고 QR 로 바로 입장한다 */}
+          <Link to="/host" className="btn-gold animate-rise order-first rounded-3xl p-7 text-center sm:order-none" style={{ animationDelay: "0.24s" }}>
             <span className="block text-3xl" aria-hidden>
               🎮
             </span>
             <span className="mt-2 block text-2xl font-extrabold tracking-wider">PLAY</span>
-            <span className="mt-1 block text-sm opacity-75">PIN 을 입력하거나 QR 로 바로 입장</span>
+            <span className="mt-1 block text-sm opacity-75">스크린에 띄우면 QR · PIN 으로 친구들이 입장해요</span>
           </Link>
         </section>
 

@@ -47,15 +47,8 @@ async function handleApi(request: Request, env: Env): Promise<Response> {
 
   if (pathname === "/api/health") return json({ ok: true });
 
-  // 관리자 비밀번호 확인 (로그인 화면용)
-  if (pathname === "/api/auth" && request.method === "POST") {
-    return isAdmin(request, env) ? json({ ok: true }) : json({ error: "비밀번호가 틀렸어요" }, 401);
-  }
-
-  // 퀴즈 세트 관리 (관리자 전용)
+  // 퀴즈 세트 관리 (운영자 혼자 쓰는 서비스라 잠금 없음)
   if (pathname === "/api/quizzes" || pathname.startsWith("/api/quizzes/")) {
-    if (!isAdmin(request, env)) return json({ error: "Unauthorized" }, 401);
-
     if (pathname === "/api/quizzes") {
       if (request.method === "GET") return json(await listQuizzes(env.DB));
       if (request.method === "POST") {
@@ -85,7 +78,6 @@ async function handleApi(request: Request, env: Env): Promise<Response> {
 
   // 방 만들기: PIN 발급 + KV 등록
   if (pathname === "/api/rooms" && request.method === "POST") {
-    if (!isAdmin(request, env)) return json({ error: "Unauthorized" }, 401);
     const body = (await request.json().catch(() => null)) as Partial<CreateRoomRequest> | null;
     const quizId = Number(body?.quizId);
     if (!Number.isInteger(quizId) || !(await quizExists(env.DB, quizId))) {
@@ -119,21 +111,6 @@ async function allocatePin(env: Env): Promise<string> {
   throw new Error("PIN 발급 실패");
 }
 
-function isAdmin(request: Request, env: Env): boolean {
-  const header = request.headers.get("Authorization") ?? "";
-  const given = header.startsWith("Bearer ") ? header.slice(7) : "";
-  return !!env.ADMIN_PASSWORD && timingSafeEqual(given, env.ADMIN_PASSWORD);
-}
-
-function timingSafeEqual(a: string, b: string): boolean {
-  const enc = new TextEncoder();
-  const x = enc.encode(a);
-  const y = enc.encode(b);
-  let diff = x.length ^ y.length;
-  for (let i = 0; i < Math.max(x.length, y.length); i++) diff |= (x[i] ?? 0) ^ (y[i] ?? 0);
-  return diff === 0;
-}
-
 function corsHeaders(request: Request, env: Env): Record<string, string> {
   const origin = request.headers.get("Origin") ?? "";
   const allowed = (env.ALLOWED_ORIGINS || "*").split(",").map((s) => s.trim());
@@ -141,7 +118,7 @@ function corsHeaders(request: Request, env: Env): Record<string, string> {
   return {
     "Access-Control-Allow-Origin": allow,
     "Access-Control-Allow-Methods": "GET, POST, PUT, DELETE, OPTIONS",
-    "Access-Control-Allow-Headers": "Content-Type, Authorization",
+    "Access-Control-Allow-Headers": "Content-Type",
     "Access-Control-Max-Age": "86400",
     Vary: "Origin",
   };

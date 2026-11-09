@@ -1,10 +1,9 @@
-import { useEffect, useState, type FormEvent } from "react";
+import { useEffect, useState } from "react";
 import { Link } from "react-router-dom";
 import { QRCodeSVG } from "qrcode.react";
 import { choiceCountOf, type AnswerIndex, type QuizSummary } from "@tob/shared";
 import { api } from "../lib/api.ts";
 import { joinUrl } from "../lib/config.ts";
-import { adminSession } from "../lib/storage.ts";
 import { rankPlayers } from "../lib/ranking.ts";
 import { useCountdown } from "../lib/useCountdown.ts";
 import { useRoom } from "../lib/useRoom.ts";
@@ -19,102 +18,31 @@ interface HostRoom {
 }
 
 /**
- * 진행자 플로우: 관리자 인증 → 퀴즈 세트 선택 → PIN/QR 로비 → 문제 진행 → 결과
- * (예배당 스크린에 띄우는 화면이므로 글자를 크게)
+ * PLAY(스크린에 띄우는 진행 화면): 퀴즈 세트 선택 → PIN/QR 로비 → 문제 진행 → 결과
+ * 운영자 혼자 쓰는 화면이라 로그인 없음. 예배당 스크린에 띄우므로 글자를 크게.
+ * 참가자는 이 화면의 QR 로 곧바로 /play?pin=… (독립된 입장 페이지)에 들어온다.
  */
 export default function HostPage() {
-  const [password, setPassword] = useState(adminSession.get());
   const [room, setRoom] = useState<HostRoom | null>(null);
-
-  if (!password) return <AdminLogin onLogin={setPassword} />;
-  if (!room) {
-    return (
-      <QuizPicker
-        password={password}
-        onCreated={setRoom}
-        onLogout={() => {
-          adminSession.clear();
-          setPassword("");
-        }}
-      />
-    );
-  }
+  if (!room) return <QuizPicker onCreated={setRoom} />;
   return <HostRoomView room={room} onExit={() => setRoom(null)} />;
 }
 
-// ───────────────────────── 1. 관리자 인증 ─────────────────────────
+// ───────────────────────── 1. 퀴즈 세트 선택 ─────────────────────────
 
-function AdminLogin({ onLogin }: { onLogin: (pw: string) => void }) {
-  const [pw, setPw] = useState("");
-  const [error, setError] = useState("");
-  const [busy, setBusy] = useState(false);
-
-  const submit = async (e: FormEvent) => {
-    e.preventDefault();
-    setBusy(true);
-    setError("");
-    try {
-      await api.login(pw);
-      adminSession.set(pw);
-      onLogin(pw);
-    } catch (err) {
-      setError((err as Error).message);
-    } finally {
-      setBusy(false);
-    }
-  };
-
-  return (
-    <main className="grid min-h-full place-items-center px-4">
-      <form onSubmit={submit} className="w-full max-w-sm space-y-4 rounded-3xl bg-white/10 p-8">
-        <h1 className="text-2xl font-bold">진행자 로그인</h1>
-        <input
-          type="password"
-          value={pw}
-          onChange={(e) => setPw(e.target.value)}
-          placeholder="관리자 비밀번호"
-          autoFocus
-          className="w-full rounded-xl bg-white px-4 py-3 text-navy-950 outline-none"
-        />
-        {error && <p className="text-sm text-red-300">{error}</p>}
-        <button disabled={busy || !pw} className="w-full rounded-xl bg-gold-400 py-3 font-bold text-navy-950 disabled:opacity-50">
-          {busy ? "확인 중…" : "로그인"}
-        </button>
-        <Link to="/" className="block text-center text-sm text-mist underline">
-          처음으로
-        </Link>
-      </form>
-    </main>
-  );
-}
-
-// ───────────────────────── 2. 퀴즈 세트 선택 ─────────────────────────
-
-function QuizPicker({
-  password,
-  onCreated,
-  onLogout,
-}: {
-  password: string;
-  onCreated: (room: HostRoom) => void;
-  onLogout: () => void;
-}) {
+function QuizPicker({ onCreated }: { onCreated: (room: HostRoom) => void }) {
   const [quizzes, setQuizzes] = useState<QuizSummary[] | null>(null);
   const [error, setError] = useState("");
   const [creating, setCreating] = useState<number | null>(null);
 
   useEffect(() => {
-    api.listQuizzes(password).then(setQuizzes, (err: Error) => {
-      if (err.message === "Unauthorized") onLogout();
-      else setError(err.message);
-    });
-    // onLogout 은 매 렌더 새로 만들어지므로 의존성에서 제외 (password 가 바뀔 때만 다시 조회)
-  }, [password]); // eslint-disable-line react-hooks/exhaustive-deps
+    api.listQuizzes().then(setQuizzes, (err: Error) => setError(err.message));
+  }, []);
 
   const create = async (quizId: number) => {
     setCreating(quizId);
     try {
-      onCreated(await api.createRoom(password, quizId));
+      onCreated(await api.createRoom(quizId));
     } catch (err) {
       setError((err as Error).message);
       setCreating(null);
@@ -124,19 +52,19 @@ function QuizPicker({
   return (
     <main className="mx-auto max-w-2xl px-4 py-10">
       <div className="mb-6 flex items-center justify-between">
-        <h1 className="text-3xl font-bold">퀴즈 세트 선택</h1>
+        <h1 className="font-serif-kr text-3xl font-extrabold">플레이할 퀴즈 고르기</h1>
         <div className="flex items-center gap-4 text-sm">
           <Link to="/host/quizzes" className="rounded-lg bg-white/10 px-3 py-2 font-bold">
-            ✏️ 퀴즈 관리
+            ✏️ 문제 만들기
           </Link>
-          <button onClick={onLogout} className="text-mist underline">
-            로그아웃
-          </button>
+          <Link to="/" className="text-mist underline">
+            처음으로
+          </Link>
         </div>
       </div>
       {error && <p className="mb-4 rounded-xl bg-red-500/20 p-3 text-red-200">{error}</p>}
       {!quizzes && !error && <p className="text-mist">불러오는 중…</p>}
-      {quizzes?.length === 0 && <p className="text-mist">퀴즈 세트가 없어요. 위의 "퀴즈 관리"에서 먼저 만들어 주세요.</p>}
+      {quizzes?.length === 0 && <p className="text-mist">퀴즈 세트가 없어요. 위의 "문제 만들기"에서 먼저 만들어 주세요.</p>}
       <ul className="space-y-3">
         {quizzes?.map((q) => (
           <li key={q.id} className="flex items-center justify-between gap-4 rounded-2xl bg-white/10 p-5">
@@ -151,7 +79,7 @@ function QuizPicker({
               disabled={creating !== null || q.questionCount === 0}
               className="shrink-0 rounded-xl bg-gold-400 px-5 py-3 font-bold text-navy-950 disabled:opacity-50"
             >
-              {creating === q.id ? "방 만드는 중…" : "방 만들기"}
+              {creating === q.id ? "준비 중…" : "시작하기"}
             </button>
           </li>
         ))}
