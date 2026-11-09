@@ -563,6 +563,58 @@ body {
   }
 }
 
+/* ───── TOV QUIZ 반짝이는 럭셔리 타이포그래피 (Otter-bot 레퍼런스 스타일) ───── */
+.tov-hero-title {
+  font-family: var(--font-sans);
+  font-weight: 900;
+  letter-spacing: -0.04em;
+  background: linear-gradient(
+    115deg,
+    #fff9e6 0%,
+    #ffeaa7 15%,
+    #ffc048 30%,
+    #ff5c8a 50%,
+    #a29bfe 70%,
+    #70a1ff 85%,
+    #ffd32a 100%,
+    #fff9e6 115%
+  );
+  background-size: 250% 100%;
+  -webkit-background-clip: text;
+  background-clip: text;
+  color: transparent;
+  animation: tov-shimmer 8s linear infinite;
+  filter: drop-shadow(0 0 35px rgba(255, 200, 50, 0.45)) drop-shadow(0 0 75px rgba(255, 120, 160, 0.3));
+  text-wrap: balance;
+}
+
+@keyframes tov-shimmer {
+  0% {
+    background-position: 0% 50%;
+  }
+  100% {
+    background-position: 250% 50%;
+  }
+}
+
+.tov-sparkle {
+  position: absolute;
+  pointer-events: none;
+  animation: tov-sparkle-pulse 2.8s ease-in-out infinite;
+}
+
+@keyframes tov-sparkle-pulse {
+  0%, 100% {
+    transform: scale(0.6) rotate(0deg);
+    opacity: 0.35;
+  }
+  50% {
+    transform: scale(1.2) rotate(90deg);
+    opacity: 1;
+    filter: drop-shadow(0 0 10px #fff) drop-shadow(0 0 18px #ffd700);
+  }
+}
+
 @media (prefers-reduced-motion: reduce) {
   .tob-char *,
   .aurora__blob,

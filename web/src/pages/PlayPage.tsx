@@ -142,20 +142,20 @@ function ProfileForm({ pin, onSubmit, onBack }: { pin: string; onSubmit: (p: Pro
         />
 
         <fieldset>
-          <legend className="mb-2 font-bold">모양</legend>
-          <div className="grid grid-cols-4 gap-2">
+          <legend className="mb-2 font-bold">캐릭터 ({CHARACTER_SHAPES.length}종)</legend>
+          <div className="grid grid-cols-4 gap-2 max-h-64 overflow-y-auto pr-1 rounded-2xl bg-black/15 p-2 border border-white/10">
             {CHARACTER_SHAPES.map((shape) => (
               <button
                 type="button"
                 key={shape}
                 onClick={() => setCharacter((c) => ({ ...c, shape }))}
                 aria-pressed={character.shape === shape}
-                className={`flex flex-col items-center rounded-xl p-2 ${
-                  character.shape === shape ? "bg-white/30 ring-2 ring-gold-400" : "bg-white/10"
+                className={`flex flex-col items-center rounded-xl p-2 transition-transform active:scale-95 ${
+                  character.shape === shape ? "bg-white/30 ring-2 ring-gold-400 scale-[1.02]" : "bg-white/10 hover:bg-white/20"
                 }`}
               >
                 <CharacterAvatar character={{ ...character, shape }} size={46} bust />
-                <span className="text-sm">{SHAPE_NICK[shape]}</span>
+                <span className="mt-1 text-xs font-semibold">{SHAPE_NICK[shape]}</span>
               </button>
             ))}
           </div>

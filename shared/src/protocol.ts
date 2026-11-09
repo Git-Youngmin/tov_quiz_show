@@ -4,7 +4,35 @@
 
 // ───────────────────────── 캐릭터 ─────────────────────────
 
-export const CHARACTER_SHAPES = ["capsule", "box", "sphere", "cone"] as const;
+export const ANIMAL_SHAPES = [
+  "bear",    // 곰돌이
+  "cat",     // 야옹이
+  "rabbit",  // 토끼
+  "puppy",   // 멍멍이
+  "fox",     // 여우
+  "panda",   // 팬더
+  "frog",    // 개구리
+  "penguin", // 펭귄
+  "chick",   // 병아리
+  "monkey",  // 원숭이
+  "pig",     // 돼지
+  "koala",   // 코알라
+  "hamster", // 햄스터
+  "tiger",   // 호랑이
+  "lion",    // 사자
+  "dino",    // 공룡
+  "robot",   // 로봇
+  "alien",   // 외계인
+  "ghost",   // 유령
+  "star",    // 별돌이
+] as const;
+
+export const LEGACY_SHAPES = ["capsule", "box", "sphere", "cone"] as const;
+
+export const CHARACTER_SHAPES = [
+  ...ANIMAL_SHAPES,
+  ...LEGACY_SHAPES,
+] as const;
 export type CharacterShape = (typeof CHARACTER_SHAPES)[number];
 
 export const CHARACTER_COLORS = ["red", "orange", "yellow", "green", "blue", "purple"] as const;

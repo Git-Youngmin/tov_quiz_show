@@ -30,28 +30,71 @@ export const COLOR_LABEL: Record<CharacterColor, string> = {
   purple: "보라",
 };
 
-/** 로비에서 고르는 "모양" 이름. 모양마다 다른 캐릭터로 그려진다 */
+/** 로비에서 고르는 캐릭터 이름 */
 export const SHAPE_LABEL: Record<CharacterShape, string> = {
+  bear: "곰돌이",
+  cat: "야옹이",
+  rabbit: "토끼",
+  puppy: "멍멍이",
+  fox: "여우",
+  panda: "팬더",
+  frog: "개구리",
+  penguin: "펭귄",
+  chick: "병아리",
+  monkey: "원숭이",
+  pig: "돼지",
+  koala: "코알라",
+  hamster: "햄스터",
+  tiger: "호랑이",
+  lion: "사자",
+  dino: "공룡",
+  robot: "로봇",
+  alien: "외계인",
+  ghost: "유령",
+  star: "별돌이",
+  // 레거시 형태
   capsule: "캡슐",
   box: "상자",
   sphere: "구",
   cone: "원뿔",
 };
-export const SHAPE_NICK: Record<CharacterShape, string> = {
-  capsule: "젤리",
-  box: "로봇",
-  sphere: "고양이",
-  cone: "마법사",
+
+export const SHAPE_NICK: Record<CharacterShape, string> = SHAPE_LABEL;
+
+export const SHAPE_ICON: Record<CharacterShape, string> = {
+  bear: "🐻",
+  cat: "🐱",
+  rabbit: "🐰",
+  puppy: "🐶",
+  fox: "🦊",
+  panda: "🐼",
+  frog: "🐸",
+  penguin: "🐧",
+  chick: "🐥",
+  monkey: "🐵",
+  pig: "🐷",
+  koala: "🐨",
+  hamster: "🐹",
+  tiger: "🐯",
+  lion: "🦁",
+  dino: "🦖",
+  robot: "🤖",
+  alien: "👽",
+  ghost: "👻",
+  star: "⭐",
+  capsule: "💊",
+  box: "📦",
+  sphere: "⚽",
+  cone: "📐",
 };
 
 export type Mood = "idle" | "happy" | "cheer" | "sad" | "wave" | "sleepy";
 
 const INK = "#1b2340";
-const GLOVE = "#f7f9ff";
-const GLOVE_EDGE = "#c9d3ee";
-const SKIN = { light: "#fff3e8", base: "#ffe2cc", dark: "#f3b99a" };
+const SNEAKER_WHITE = "#ffffff";
+const SNEAKER_EDGE = "#cfd7ed";
 
-/** 얼굴 위치/크기 (모양마다 머리 크기가 달라서) */
+/** 얼굴 위치/크기 기본값 */
 interface Face {
   cx: number;
   ey: number; // 눈 y
@@ -60,14 +103,24 @@ interface Face {
   by: number; // 볼터치 y
   bx: number; // 볼터치 x 오프셋
 }
-const FACE: Record<CharacterShape, Face> = {
-  capsule: { cx: 60, ey: 56, dx: 15, my: 70, by: 66, bx: 25 },
-  box: { cx: 60, ey: 56, dx: 15, my: 69, by: 66, bx: 24 },
-  sphere: { cx: 60, ey: 53, dx: 16, my: 73, by: 67, bx: 26 },
-  cone: { cx: 60, ey: 66, dx: 12.5, my: 79, by: 76, bx: 20 },
+
+const DEFAULT_FACE: Face = { cx: 60, ey: 55, dx: 15, my: 71, by: 66, bx: 25 };
+
+const FACE_OVERRIDE: Partial<Record<CharacterShape, Partial<Face>>> = {
+  frog: { ey: 50, my: 73, dx: 17, by: 67 },
+  chick: { ey: 54, my: 73, dx: 14, by: 65 },
+  penguin: { ey: 54, my: 72, dx: 15, by: 66 },
+  pig: { ey: 52, my: 77, dx: 16, by: 67 },
+  cone: { ey: 66, my: 79, dx: 12.5, by: 76, bx: 20 },
+  ghost: { ey: 55, my: 72, dx: 14, by: 66 },
+  star: { ey: 58, my: 74, dx: 15, by: 68 },
 };
 
-/** 문자열/숫자 → 0~1 (캐릭터마다 움직임 타이밍을 어긋나게) */
+function getFace(shape: CharacterShape): Face {
+  return { ...DEFAULT_FACE, ...(FACE_OVERRIDE[shape] ?? {}) };
+}
+
+/** 문자열/숫자 → 0~1 (움직임 타이밍 분산용) */
 function hash01(seed: string | number): number {
   const s = String(seed);
   let h = 2166136261;
@@ -80,48 +133,207 @@ export interface CharacterAvatarProps {
   /** 가로 크기(px) */
   size?: number;
   mood?: Mood;
-  /** 움직임 타이밍을 달리하는 값 (닉네임/id 등) */
+  /** 움직임 타이밍 분산 시드 */
   seed?: string | number;
-  /** 나타날 때 통통 튀며 등장 */
+  /** 등장 시 팝업 애니메이션 */
   popIn?: boolean;
-  /** 머리~가슴만 보여 주기 (작은 목록·헤더용) */
+  /** 머리~가슴만 보여주기 (목록/버튼용) */
   bust?: boolean;
   className?: string;
 }
 
 /**
- * 치비 캐릭터 — 머리 · 몸통 · 팔과 장갑 · 다리와 신발이 따로 있고, 큰 눈과 볼터치가 있다.
- * 상태(mood)에 따라 머리·팔·다리·눈이 각각 움직인다(index.css 의 .tob-char). 모양마다 다른 캐릭터:
- * 캡슐=젤리, 상자=로봇, 구=고양이, 원뿔=마법사. 전부 SVG 로 직접 그려서 색 6종이 그대로 적용된다.
+ * 팔다리가 있는 2D 움직이는 카훗 스타일 캐릭터 컴포넌트.
+ * 각 캐릭터마다 고유의 귀, 부리, 뿔, 옷, 스니커즈 신발, 손가락이 있는 진짜 캐릭터입니다.
  */
-export function CharacterAvatar({ character, size = 56, mood = "idle", seed = 0, popIn = false, bust = false, className = "" }: CharacterAvatarProps) {
+export function CharacterAvatar({
+  character,
+  size = 56,
+  mood = "idle",
+  seed = 0,
+  popIn = false,
+  bust = false,
+  className = "",
+}: CharacterAvatarProps) {
   const uid = useId().replace(/:/g, "");
-  const { light, base, dark } = PALETTE[character.color];
+  const { light, base, dark } = PALETTE[character.color] ?? PALETTE.blue;
   const shape = character.shape;
-  const f = FACE[shape];
+  const f = getFace(shape);
   const delay = `${-(hash01(seed) * 6).toFixed(2)}s`;
   const happy = mood === "happy" || mood === "cheer";
   const closedEyes = happy || mood === "sleepy";
   const id = (n: string) => `${n}${uid}`;
   const eyeX = [f.cx - f.dx, f.cx + f.dx];
 
-  /** 머리 모양 (채우기·클립 둘 다에 쓴다) */
+  /** 머리 기본 베이스 형태 */
   const headShape = (fill: string): ReactElement => {
     switch (shape) {
-      case "capsule":
-        return <rect x="27" y="14" width="66" height="74" rx="31" fill={fill} />;
       case "box":
         return <rect x="25" y="22" width="70" height="64" rx="18" fill={fill} />;
-      case "sphere":
-        return <ellipse cx="60" cy="55" rx="37" ry="34" fill={fill} />;
       case "cone":
         return <circle cx="60" cy="64" r="27" fill={fill} />;
+      case "frog":
+        return <ellipse cx="60" cy="58" rx="38" ry="32" fill={fill} />;
+      case "star":
+        return <circle cx="60" cy="58" r="34" fill={fill} />;
+      default:
+        // 통통하고 사랑스러운 둥근 두상
+        return <ellipse cx="60" cy="55" rx="36" ry="33" fill={fill} />;
     }
   };
 
-  /** 머리 뒤에 깔리는 것 (새싹, 안테나, 귀) */
+  /** 머리 뒤쪽 파츠 (귀, 뿔, 안테나 등) */
   const behind = (): ReactElement | null => {
     switch (shape) {
+      case "bear":
+        return (
+          <g>
+            <circle cx="30" cy="30" r="14" fill={base} stroke={dark} strokeWidth="2.5" />
+            <circle cx="30" cy="30" r="8" fill="#ffe2cc" />
+            <circle cx="90" cy="30" r="14" fill={base} stroke={dark} strokeWidth="2.5" />
+            <circle cx="90" cy="30" r="8" fill="#ffe2cc" />
+          </g>
+        );
+      case "cat":
+        return (
+          <g>
+            <path d="M26 42 Q23 15 37 14 Q45 15 52 28 Z" fill={base} stroke={dark} strokeWidth="2.5" strokeLinejoin="round" />
+            <path d="M32 36 Q30 22 38 21 Q43 22 47 29 Z" fill="#ffb7c9" />
+            <path d="M94 42 Q97 15 83 14 Q75 15 68 28 Z" fill={base} stroke={dark} strokeWidth="2.5" strokeLinejoin="round" />
+            <path d="M88 36 Q90 22 82 21 Q77 22 73 29 Z" fill="#ffb7c9" />
+          </g>
+        );
+      case "rabbit":
+        return (
+          <g>
+            <ellipse cx="44" cy="18" rx="10" ry="24" fill={base} stroke={dark} strokeWidth="2.5" transform="rotate(-8 44 18)" />
+            <ellipse cx="44" cy="18" rx="5.5" ry="17" fill="#ffb7c9" transform="rotate(-8 44 18)" />
+            <ellipse cx="76" cy="18" rx="10" ry="24" fill={base} stroke={dark} strokeWidth="2.5" transform="rotate(8 76 18)" />
+            <ellipse cx="76" cy="18" rx="5.5" ry="17" fill="#ffb7c9" transform="rotate(8 76 18)" />
+          </g>
+        );
+      case "puppy":
+        return (
+          <g>
+            <path d="M26 36 C14 42 12 68 22 74 C30 78 36 66 32 46 Z" fill={dark} stroke="#0e172e" strokeWidth="2" />
+            <path d="M94 36 C106 42 108 68 98 74 C90 78 84 66 88 46 Z" fill={dark} stroke="#0e172e" strokeWidth="2" />
+          </g>
+        );
+      case "fox":
+        return (
+          <g>
+            <path d="M22 40 Q18 12 36 10 Q45 12 50 26 Z" fill={base} stroke={dark} strokeWidth="2.5" strokeLinejoin="round" />
+            <path d="M28 34 Q26 18 36 17 Q41 18 45 26 Z" fill="#ffffff" />
+            <path d="M98 40 Q102 12 84 10 Q75 12 70 26 Z" fill={base} stroke={dark} strokeWidth="2.5" strokeLinejoin="round" />
+            <path d="M92 34 Q94 18 84 17 Q79 18 75 26 Z" fill="#ffffff" />
+          </g>
+        );
+      case "panda":
+        return (
+          <g>
+            <circle cx="30" cy="30" r="13" fill="#1b2340" stroke="#0c1020" strokeWidth="2" />
+            <circle cx="90" cy="30" r="13" fill="#1b2340" stroke="#0c1020" strokeWidth="2" />
+          </g>
+        );
+      case "frog":
+        return (
+          <g>
+            <circle cx="40" cy="36" r="14" fill={base} stroke={dark} strokeWidth="2.5" />
+            <circle cx="80" cy="36" r="14" fill={base} stroke={dark} strokeWidth="2.5" />
+          </g>
+        );
+      case "chick":
+        return (
+          <g>
+            <path d="M57 26 Q60 12 63 26" stroke="#ffa502" strokeWidth="4" strokeLinecap="round" />
+            <circle cx="60" cy="14" r="4.5" fill="#ffa502" />
+          </g>
+        );
+      case "monkey":
+        return (
+          <g>
+            <circle cx="21" cy="54" r="14" fill={base} stroke={dark} strokeWidth="2" />
+            <circle cx="21" cy="54" r="8" fill="#ffd3b6" />
+            <circle cx="99" cy="54" r="14" fill={base} stroke={dark} strokeWidth="2" />
+            <circle cx="99" cy="54" r="8" fill="#ffd3b6" />
+          </g>
+        );
+      case "pig":
+        return (
+          <g>
+            <polygon points="26,38 18,20 38,24" fill={light} stroke={dark} strokeWidth="2" strokeLinejoin="round" />
+            <polygon points="94,38 102,20 82,24" fill={light} stroke={dark} strokeWidth="2" strokeLinejoin="round" />
+          </g>
+        );
+      case "koala":
+        return (
+          <g>
+            <circle cx="22" cy="42" r="16" fill={base} stroke={dark} strokeWidth="2.5" />
+            <circle cx="22" cy="42" r="9" fill="#ffffff" opacity="0.8" />
+            <circle cx="98" cy="42" r="16" fill={base} stroke={dark} strokeWidth="2.5" />
+            <circle cx="98" cy="42" r="9" fill="#ffffff" opacity="0.8" />
+          </g>
+        );
+      case "hamster":
+        return (
+          <g>
+            <circle cx="32" cy="32" r="10" fill={base} stroke={dark} strokeWidth="2" />
+            <circle cx="32" cy="32" r="6" fill="#ffb7c9" />
+            <circle cx="88" cy="32" r="10" fill={base} stroke={dark} strokeWidth="2" />
+            <circle cx="88" cy="32" r="6" fill="#ffb7c9" />
+          </g>
+        );
+      case "tiger":
+        return (
+          <g>
+            <circle cx="31" cy="31" r="11" fill={base} stroke={dark} strokeWidth="2" />
+            <circle cx="89" cy="31" r="11" fill={base} stroke={dark} strokeWidth="2" />
+          </g>
+        );
+      case "lion":
+        return (
+          <g>
+            {/* 풍성하고 사랑스러운 사자 갈기 */}
+            {[0, 30, 60, 90, 120, 150, 180, 210, 240, 270, 300, 330].map((deg) => {
+              const rad = (deg * Math.PI) / 180;
+              const x = 60 + Math.cos(rad) * 40;
+              const y = 55 + Math.sin(rad) * 36;
+              return <circle key={deg} cx={x} cy={y} r="14" fill="#e67e22" stroke="#d35400" strokeWidth="1.5" />;
+            })}
+          </g>
+        );
+      case "dino":
+        return (
+          <g>
+            <polygon points="56,24 60,10 64,24" fill="#f5cd79" stroke="#d49b34" strokeWidth="2" strokeLinejoin="round" />
+            <polygon points="38,28 42,16 46,28" fill="#f5cd79" stroke="#d49b34" strokeWidth="2" strokeLinejoin="round" />
+            <polygon points="74,28 78,16 82,28" fill="#f5cd79" stroke="#d49b34" strokeWidth="2" strokeLinejoin="round" />
+          </g>
+        );
+      case "robot":
+        return (
+          <g>
+            <line x1="60" y1="24" x2="60" y2="6" stroke={dark} strokeWidth="4" strokeLinecap="round" />
+            <circle cx="60" cy="5" r="5.5" fill="#00d2d3" stroke="#009798" strokeWidth="1.8" />
+            <rect x="18" y="48" width="8" height="14" rx="3" fill={dark} />
+            <rect x="94" y="48" width="8" height="14" rx="3" fill={dark} />
+          </g>
+        );
+      case "alien":
+        return (
+          <g>
+            <path d="M48 24 Q40 8 36 12" fill="none" stroke={dark} strokeWidth="3" strokeLinecap="round" />
+            <circle cx="36" cy="12" r="5" fill="#2ed573" />
+            <path d="M72 24 Q80 8 84 12" fill="none" stroke={dark} strokeWidth="3" strokeLinecap="round" />
+            <circle cx="84" cy="12" r="5" fill="#2ed573" />
+          </g>
+        );
+      case "star":
+        return (
+          <g>
+            <polygon points="60,6 74,32 104,36 80,56 88,86 60,70 32,86 40,56 16,36 46,32" fill={base} stroke={dark} strokeWidth="3" strokeLinejoin="round" />
+          </g>
+        );
       case "capsule":
         return (
           <g fill="none" stroke={dark} strokeWidth="3.4" strokeLinecap="round">
@@ -129,46 +341,128 @@ export function CharacterAvatar({ character, size = 56, mood = "idle", seed = 0,
             <path d="M60 17 C69 9 78 11 76 3 C70 5 64 8 61 15" fill={light} stroke={dark} strokeWidth="2.2" strokeLinejoin="round" />
           </g>
         );
-      case "box":
-        return (
-          <g>
-            <line x1="60" y1="24" x2="60" y2="8" stroke={dark} strokeWidth="3.4" strokeLinecap="round" />
-            <circle cx="60" cy="6" r="5.2" fill={light} stroke={dark} strokeWidth="2" />
-            <circle cx="24" cy="56" r="6" fill={dark} />
-            <circle cx="96" cy="56" r="6" fill={dark} />
-          </g>
-        );
-      case "sphere":
-        return (
-          <g>
-            <path d="M29 42 Q25 12 36 11 Q43 11 55 25 Z" fill={base} stroke={dark} strokeWidth="1.6" strokeLinejoin="round" />
-            <path d="M35 37 Q33 20 38 19 Q43 20 50 27 Z" fill="#ffb7c9" />
-            <path d="M91 42 Q95 12 84 11 Q77 11 65 25 Z" fill={base} stroke={dark} strokeWidth="1.6" strokeLinejoin="round" />
-            <path d="M85 37 Q87 20 82 19 Q77 20 70 27 Z" fill="#ffb7c9" />
-          </g>
-        );
-      case "cone":
+      default:
         return null;
     }
   };
 
-  /** 머리 위/앞에 얹는 것 (로봇 얼굴판, 고양이 코·수염, 마법사 모자) */
+  /** 머리 앞쪽 파츠 (주둥이, 코, 볼, 장식) */
   const front = (): ReactElement | null => {
     switch (shape) {
-      case "capsule":
-        return null;
-      case "box":
-        return <rect x="33" y="33" width="54" height="46" rx="15" fill={`url(#${id("p")})`} stroke={dark} strokeOpacity="0.35" strokeWidth="1.2" />;
-      case "sphere":
+      case "bear":
         return (
           <g>
-            <path d="M57 64 h6 l-3 3.6 z" fill="#ff8aa6" />
-            <g stroke={INK} strokeOpacity="0.55" strokeWidth="1.5" strokeLinecap="round">
-              <line x1="30" y1="62" x2="17" y2="58" />
-              <line x1="30" y1="67" x2="16" y2="68" />
-              <line x1="90" y1="62" x2="103" y2="58" />
-              <line x1="90" y1="67" x2="104" y2="68" />
+            <ellipse cx="60" cy="67" rx="14" ry="10" fill="#fff4e6" stroke={dark} strokeWidth="1.4" />
+            <ellipse cx="60" cy="63" rx="5" ry="3.5" fill="#1b2340" />
+          </g>
+        );
+      case "cat":
+        return (
+          <g>
+            <polygon points="57,63 63,63 60,66" fill="#ff7597" />
+            <g stroke={INK} strokeWidth="1.8" strokeLinecap="round" opacity="0.6">
+              <line x1="28" y1="62" x2="16" y2="59" />
+              <line x1="28" y1="67" x2="15" y2="68" />
+              <line x1="92" y1="62" x2="104" y2="59" />
+              <line x1="92" y1="67" x2="105" y2="68" />
             </g>
+          </g>
+        );
+      case "rabbit":
+        return (
+          <g>
+            <ellipse cx="60" cy="65" rx="3.8" ry="2.8" fill="#ff7597" />
+            <rect x="57.5" y="71" width="5" height="5" rx="1.2" fill="#ffffff" stroke={INK} strokeWidth="1" />
+          </g>
+        );
+      case "puppy":
+        return (
+          <g>
+            <ellipse cx="60" cy="65" rx="13" ry="9" fill="#fff4e6" />
+            <circle cx="60" cy="62" r="4.5" fill="#1b2340" />
+            {happy && <path d="M57 73 Q60 82 63 73 Z" fill="#ff6b81" />}
+          </g>
+        );
+      case "fox":
+        return (
+          <g>
+            <path d="M30 65 Q45 74 60 74 Q75 74 90 65 Q75 58 60 62 Q45 58 30 65 Z" fill="#ffffff" />
+            <polygon points="57,64 63,64 60,68" fill="#1b2340" />
+          </g>
+        );
+      case "panda":
+        return (
+          <g>
+            {/* 판다 눈 블랙 패치 */}
+            <ellipse cx="44" cy="54" rx="12" ry="14" fill="#1b2340" transform="rotate(-15 44 54)" />
+            <ellipse cx="76" cy="54" rx="12" ry="14" fill="#1b2340" transform="rotate(15 76 54)" />
+            <ellipse cx="60" cy="66" rx="4" ry="2.8" fill="#1b2340" />
+          </g>
+        );
+      case "penguin":
+        return (
+          <g>
+            <polygon points="53,63 67,63 60,75" fill="#ffa502" stroke="#e07a1f" strokeWidth="1.5" strokeLinejoin="round" />
+          </g>
+        );
+      case "chick":
+        return (
+          <g>
+            <polygon points="54,64 66,64 60,73" fill="#ffa502" stroke="#e07a1f" strokeWidth="1.5" strokeLinejoin="round" />
+          </g>
+        );
+      case "pig":
+        return (
+          <g>
+            <ellipse cx="60" cy="68" rx="12" ry="8" fill="#ffb7c9" stroke={dark} strokeWidth="1.5" />
+            <circle cx="56" cy="68" r="2" fill="#7a2338" />
+            <circle cx="64" cy="68" r="2" fill="#7a2338" />
+          </g>
+        );
+      case "monkey":
+        return (
+          <g>
+            <ellipse cx="60" cy="67" rx="18" ry="12" fill="#ffd3b6" stroke={dark} strokeWidth="1.2" />
+            <circle cx="57" cy="65" r="1.5" fill="#1b2340" />
+            <circle cx="63" cy="65" r="1.5" fill="#1b2340" />
+          </g>
+        );
+      case "koala":
+        return (
+          <g>
+            <ellipse cx="60" cy="64" rx="8" ry="12" fill="#1b2340" />
+          </g>
+        );
+      case "hamster":
+        return (
+          <g>
+            <circle cx="38" cy="66" r="11" fill="#ffffff" opacity="0.9" />
+            <circle cx="82" cy="66" r="11" fill="#ffffff" opacity="0.9" />
+            <polygon points="58,64 62,64 60,67" fill="#ff7597" />
+            <rect x="58.5" y="70" width="3" height="4" rx="0.8" fill="#ffffff" stroke={INK} strokeWidth="0.8" />
+          </g>
+        );
+      case "tiger":
+        return (
+          <g>
+            <path d="M53 28 L60 35 L67 28" fill="none" stroke="#1b2340" strokeWidth="3" strokeLinecap="round" />
+            <line x1="55" y1="38" x2="65" y2="38" stroke="#1b2340" strokeWidth="2.5" strokeLinecap="round" />
+            <ellipse cx="60" cy="65" rx="4" ry="2.5" fill="#1b2340" />
+          </g>
+        );
+      case "alien":
+        return (
+          <g>
+            {/* 제3의 눈 */}
+            <circle cx="60" cy="38" r="7.5" fill="#ffffff" stroke={dark} strokeWidth="1.5" />
+            <circle cx="60" cy="38" r="4" fill="#1b2340" />
+            <circle cx="58.5" cy="36.5" r="1.5" fill="#ffffff" />
+          </g>
+        );
+      case "robot":
+        return (
+          <g>
+            <rect x="33" y="36" width="54" height="42" rx="12" fill={`url(#${id("p")})`} stroke={dark} strokeWidth="1.4" />
           </g>
         );
       case "cone":
@@ -180,50 +474,43 @@ export function CharacterAvatar({ character, size = 56, mood = "idle", seed = 0,
             <path d="M61 13 l1.8 4.4 4.7.4 -3.6 3 1.1 4.6 -4-2.5 -4 2.5 1.1 -4.6 -3.6 -3 4.7 -.4z" fill="#fff0b8" />
           </g>
         );
+      default:
+        return null;
     }
   };
 
-  /** 몸통 */
+  /** 몸통 렌더링 */
   const torso = (): ReactElement => {
-    switch (shape) {
-      case "capsule":
-        return (
+    return (
+      <g>
+        {/* 상의 / 옷 / 몸통 */}
+        <rect x="41" y="82" width="38" height="38" rx="12" fill={`url(#${id("t")})`} />
+        {/* 배 패치 또는 옷 디테일 */}
+        {shape === "penguin" ? (
+          <ellipse cx="60" cy="102" rx="13" ry="14" fill="#ffffff" />
+        ) : shape === "panda" ? (
+          <ellipse cx="60" cy="102" rx="12" ry="13" fill="#ffffff" />
+        ) : shape === "frog" ? (
+          <ellipse cx="60" cy="102" rx="12" ry="13" fill="#e8ffaa" />
+        ) : shape === "robot" ? (
           <g>
-            <rect x="44" y="84" width="32" height="35" rx="14" fill={`url(#${id("t")})`} />
-            <ellipse cx="60" cy="104" rx="9" ry="10" fill="#fff" opacity="0.28" />
+            <rect x="49" y="93" width="22" height="15" rx="4" fill="#1b2340" />
+            <circle cx="55" cy="100.5" r="2.2" fill="#00d2d3" />
+            <circle cx="65" cy="100.5" r="2.2" fill="#ff4757" />
           </g>
-        );
-      case "box":
-        return (
+        ) : (
           <g>
-            <rect x="42" y="84" width="36" height="35" rx="9" fill={`url(#${id("t")})`} />
-            <rect x="51" y="94" width="18" height="12" rx="3.5" fill="#f2f6ff" opacity="0.9" />
-            <circle cx="56" cy="100" r="1.8" fill={base} />
-            <circle cx="64" cy="100" r="1.8" fill={dark} />
+            {/* 귀여운 후디/티셔츠 넥라인 & 가슴 하이라이트 */}
+            <path d="M50 82 Q60 90 70 82" fill="none" stroke="#ffffff" strokeWidth="2.5" opacity="0.6" strokeLinecap="round" />
+            <ellipse cx="60" cy="102" rx="9" ry="10" fill="#ffffff" opacity="0.25" />
           </g>
-        );
-      case "sphere":
-        return (
-          <g>
-            <path d="M77 110 Q100 110 95 90" fill="none" stroke={base} strokeWidth="7" strokeLinecap="round" />
-            <ellipse cx="60" cy="102" rx="20" ry="18" fill={`url(#${id("t")})`} />
-            <ellipse cx="60" cy="105" rx="11.5" ry="12" fill="#fff8ee" opacity="0.92" />
-          </g>
-        );
-      case "cone":
-        return (
-          <g>
-            <path d="M48 90 Q60 85 72 90 L84 121 Q60 128 36 121 Z" fill={`url(#${id("t")})`} />
-            <path d="M43 107 Q60 112 77 107 L78.5 113 Q60 118.5 41.5 113 Z" fill="#e8cf9c" />
-          </g>
-        );
-    }
+        )}
+      </g>
+    );
   };
 
-  const limb = shape === "cone" ? base : dark;
-  const ink = INK;
+  const limbColor = dark;
   const { cx } = f;
-  const faceColors = shape === "cone" ? SKIN : { light, base, dark };
 
   const viewBox = bust ? "14 -6 92 106" : "0 -6 120 166";
   const height = bust ? (size * 106) / 92 : (size * 166) / 120;
@@ -234,16 +521,16 @@ export function CharacterAvatar({ character, size = 56, mood = "idle", seed = 0,
       width={size}
       height={height}
       role="img"
-      aria-label={`${COLOR_LABEL[character.color]} ${SHAPE_NICK[shape]} 캐릭터`}
+      aria-label={`${COLOR_LABEL[character.color]} ${SHAPE_LABEL[shape]} 캐릭터`}
       className={`tob-char ${bust ? "tob-bust" : ""} ${popIn ? "animate-pop" : ""} ${className}`}
       data-mood={mood}
       style={{ "--d": delay } as CSSProperties}
     >
       <defs>
         <radialGradient id={id("h")} cx="35%" cy="25%" r="95%">
-          <stop offset="0" stopColor={faceColors.light} />
-          <stop offset="0.55" stopColor={faceColors.base} />
-          <stop offset="1" stopColor={faceColors.dark} />
+          <stop offset="0" stopColor={light} />
+          <stop offset="0.55" stopColor={base} />
+          <stop offset="1" stopColor={dark} />
         </radialGradient>
         <linearGradient id={id("t")} x1="0" y1="0" x2="0.4" y2="1">
           <stop offset="0" stopColor={light} />
@@ -256,7 +543,7 @@ export function CharacterAvatar({ character, size = 56, mood = "idle", seed = 0,
         </linearGradient>
         <radialGradient id={id("e")} cx="50%" cy="30%" r="80%">
           <stop offset="0" stopColor="#3a4a8c" />
-          <stop offset="0.6" stopColor={ink} />
+          <stop offset="0.6" stopColor={INK} />
           <stop offset="1" stopColor="#0d1226" />
         </radialGradient>
         <radialGradient id={id("s")}>
@@ -267,60 +554,72 @@ export function CharacterAvatar({ character, size = 56, mood = "idle", seed = 0,
       </defs>
 
       {/* 바닥 그림자 */}
-      <ellipse className="c-shadow" cx="60" cy="146" rx="30" ry="6.5" fill={`url(#${id("s")})`} />
+      <ellipse className="c-shadow" cx="60" cy="148" rx="32" ry="7" fill={`url(#${id("s")})`} />
 
       <g className="c-body">
-        {/* 다리 + 신발 */}
+        {/* 다리 + 스니커즈 신발 (진짜 캐릭터 같은 도톰한 다리와 신발) */}
         <g className="c-leg-l">
-          <line x1="52" y1="112" x2="49" y2="136" stroke={limb} strokeWidth="8.5" strokeLinecap="round" />
-          <ellipse cx="46" cy="141" rx="12.5" ry="6.4" fill={GLOVE} stroke={GLOVE_EDGE} strokeWidth="1.2" />
-          <path d="M34 143 Q46 148 58.5 143" fill="none" stroke={dark} strokeWidth="2.2" strokeLinecap="round" />
+          {/* 다리 기둥 */}
+          <rect x="47" y="112" width="10" height="24" rx="5" fill={limbColor} />
+          {/* 스니커즈 본체 */}
+          <path d="M42 135 L59 135 C61 135 62 137 62 140 L62 144 L38 144 C38 139 39 135 42 135 Z" fill={SNEAKER_WHITE} stroke={SNEAKER_EDGE} strokeWidth="1" />
+          {/* 토캡 포인트 (캐릭터 컬러 포인트) */}
+          <path d="M38 141 Q40 136 45 136 L45 144 L38 144 Z" fill={base} />
+          {/* 신발 밑창 */}
+          <rect x="37" y="143" width="26" height="4.5" rx="2" fill="#2d3436" />
         </g>
         <g className="c-leg-r">
-          <line x1="68" y1="112" x2="71" y2="136" stroke={limb} strokeWidth="8.5" strokeLinecap="round" />
-          <ellipse cx="74" cy="141" rx="12.5" ry="6.4" fill={GLOVE} stroke={GLOVE_EDGE} strokeWidth="1.2" />
-          <path d="M61.5 143 Q74 148 86 143" fill="none" stroke={dark} strokeWidth="2.2" strokeLinecap="round" />
+          {/* 다리 기둥 */}
+          <rect x="63" y="112" width="10" height="24" rx="5" fill={limbColor} />
+          {/* 스니커즈 본체 */}
+          <path d="M78 135 L61 135 C59 135 58 137 58 140 L58 144 L82 144 C82 139 81 135 78 135 Z" fill={SNEAKER_WHITE} stroke={SNEAKER_EDGE} strokeWidth="1" />
+          {/* 토캡 포인트 (캐릭터 컬러 포인트) */}
+          <path d="M82 141 Q80 136 75 136 L75 144 L82 144 Z" fill={base} />
+          {/* 신발 밑창 */}
+          <rect x="57" y="143" width="26" height="4.5" rx="2" fill="#2d3436" />
         </g>
 
         {torso()}
 
-        {/* 머리 (고개를 갸웃거리는 단위) */}
+        {/* 머리 (고개 갸웃거림 & 표정) */}
         <g className="c-head">
           {behind()}
           {headShape(`url(#${id("h")})`)}
-          {/* 머리 하이라이트 + 아래쪽 은은한 그림자 */}
+
+          {/* 머리 입체 하이라이트 */}
           <g clipPath={`url(#${id("c")})`}>
-            <ellipse className="c-static" cx="42" cy="34" rx="15" ry="9" fill="#fff" opacity="0.3" transform="rotate(-24 42 34)" />
-            <ellipse cx="66" cy="96" rx="48" ry="16" fill={shape === "cone" ? SKIN.dark : dark} opacity="0.22" />
+            <ellipse className="c-static" cx="44" cy="35" rx="16" ry="10" fill="#ffffff" opacity="0.32" transform="rotate(-24 44 35)" />
+            <ellipse cx="66" cy="94" rx="46" ry="16" fill={dark} opacity="0.22" />
           </g>
+
           {front()}
 
-          {/* 볼터치 */}
-          <ellipse cx={cx - f.bx} cy={f.by} rx="5.4" ry="3.4" fill="#ff7a9a" opacity="0.5" />
-          <ellipse cx={cx + f.bx} cy={f.by} rx="5.4" ry="3.4" fill="#ff7a9a" opacity="0.5" />
+          {/* 사랑스러운 볼터치 */}
+          <ellipse cx={cx - f.bx} cy={f.by} rx="6" ry="4" fill="#ff7a9a" opacity="0.6" />
+          <ellipse cx={cx + f.bx} cy={f.by} rx="6" ry="4" fill="#ff7a9a" opacity="0.6" />
 
           {/* 눈썹 */}
           {!happy && mood !== "sleepy" && (
-            <g fill="none" stroke={ink} strokeWidth="2.2" strokeLinecap="round" opacity="0.8">
+            <g fill="none" stroke={INK} strokeWidth="2.4" strokeLinecap="round" opacity="0.85">
               {eyeX.map((x, i) => {
-                const s = i === 0 ? 1 : -1; // 왼쪽/오른쪽 대칭
+                const s = i === 0 ? 1 : -1;
                 return mood === "sad" ? (
-                  <path key={x} d={`M${x - 5 * s} ${f.ey - 14} L${x + 5 * s} ${f.ey - 17.5}`} />
+                  <path key={x} d={`M${x - 6 * s} ${f.ey - 13} L${x + 6 * s} ${f.ey - 17}`} />
                 ) : (
-                  <path key={x} d={`M${x - 5} ${f.ey - 15} Q${x} ${f.ey - 18} ${x + 5} ${f.ey - 15}`} />
+                  <path key={x} d={`M${x - 6} ${f.ey - 14} Q${x} ${f.ey - 18} ${x + 6} ${f.ey - 14}`} />
                 );
               })}
             </g>
           )}
 
-          {/* 눈: 큰 애니메이션풍 눈 + 하이라이트 */}
+          {/* 눈: 초롱초롱 반짝이는 카훗 만화 눈 */}
           {closedEyes ? (
-            <g fill="none" stroke={ink} strokeWidth="3" strokeLinecap="round">
+            <g fill="none" stroke={INK} strokeWidth="3.4" strokeLinecap="round">
               {eyeX.map((x) =>
                 happy ? (
-                  <path key={x} d={`M${x - 6.5} ${f.ey + 2} Q${x} ${f.ey - 8} ${x + 6.5} ${f.ey + 2}`} />
+                  <path key={x} d={`M${x - 7.5} ${f.ey + 2} Q${x} ${f.ey - 9} ${x + 7.5} ${f.ey + 2}`} />
                 ) : (
-                  <path key={x} d={`M${x - 6.5} ${f.ey - 1} Q${x} ${f.ey + 5} ${x + 6.5} ${f.ey - 1}`} />
+                  <path key={x} d={`M${x - 7.5} ${f.ey - 1} Q${x} ${f.ey + 6} ${x + 7.5} ${f.ey - 1}`} />
                 ),
               )}
             </g>
@@ -329,45 +628,62 @@ export function CharacterAvatar({ character, size = 56, mood = "idle", seed = 0,
               <g className="c-pupils">
                 {eyeX.map((x) => (
                   <g key={x}>
-                    <ellipse cx={x} cy={f.ey} rx="7.4" ry="9.6" fill={`url(#${id("e")})`} />
-                    <circle cx={x - 2.5} cy={f.ey - 3.6} r="3" fill="#fff" />
-                    <circle cx={x + 2.6} cy={f.ey + 3.4} r="1.4" fill="#fff" opacity="0.9" />
+                    {/* 흰자위 */}
+                    <ellipse cx={x} cy={f.ey} rx="8.5" ry="11" fill="#ffffff" />
+                    {/* 눈동자 */}
+                    <ellipse cx={x} cy={f.ey} rx="7.4" ry="9.8" fill={`url(#${id("e")})`} />
+                    {/* 트윈 하이라이트 글린트 */}
+                    <circle cx={x - 2.8} cy={f.ey - 3.8} r="3.2" fill="#ffffff" />
+                    <circle cx={x + 2.8} cy={f.ey + 3.4} r="1.5" fill="#ffffff" opacity="0.9" />
                   </g>
                 ))}
               </g>
             </g>
           )}
 
-          {/* 입 */}
+          {/* 입 (귀여운 입모양) */}
           {happy ? (
             <g>
-              <path d={`M${cx - 7} ${f.my - 2} Q${cx} ${f.my + 14} ${cx + 7} ${f.my - 2} Z`} fill="#7a2338" />
-              <ellipse cx={cx} cy={f.my + 5.2} rx="3.4" ry="2" fill="#ff8aa6" />
+              <path d={`M${cx - 8} ${f.my - 2} Q${cx} ${f.my + 14} ${cx + 8} ${f.my - 2} Z`} fill="#7a2338" />
+              <ellipse cx={cx} cy={f.my + 5} rx="4" ry="2.5" fill="#ff8aa6" />
             </g>
           ) : mood === "sad" ? (
-            <path d={`M${cx - 5} ${f.my + 4} Q${cx} ${f.my - 2} ${cx + 5} ${f.my + 4}`} fill="none" stroke={ink} strokeWidth="2.4" strokeLinecap="round" />
+            <path d={`M${cx - 6} ${f.my + 4} Q${cx} ${f.my - 2} ${cx + 6} ${f.my + 4}`} fill="none" stroke={INK} strokeWidth="2.6" strokeLinecap="round" />
           ) : mood === "sleepy" ? (
-            <ellipse cx={cx} cy={f.my + 1} rx="2.8" ry="2.4" fill="#7a2338" />
+            <ellipse cx={cx} cy={f.my + 1} rx="3" ry="2.5" fill="#7a2338" />
           ) : (
-            <path d={`M${cx - 5} ${f.my} Q${cx - 2.5} ${f.my + 4.5} ${cx} ${f.my + 1} Q${cx + 2.5} ${f.my + 4.5} ${cx + 5} ${f.my}`} fill="none" stroke={ink} strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round" />
+            <path
+              d={`M${cx - 6} ${f.my} Q${cx - 3} ${f.my + 5} ${cx} ${f.my + 1} Q${cx + 3} ${f.my + 5} ${cx + 6} ${f.my}`}
+              fill="none"
+              stroke={INK}
+              strokeWidth="2.4"
+              strokeLinecap="round"
+              strokeLinejoin="round"
+            />
           )}
 
-          {mood === "sad" && <path d={`M${eyeX[1] + 6} ${f.ey + 6} q3 5 0 8 q-3 -3 0 -8 Z`} fill="#8fd3ff" />}
+          {mood === "sad" && <path d={`M${eyeX[1] + 7} ${f.ey + 6} q3 5 0 8 q-3 -3 0 -8 Z`} fill="#8fd3ff" />}
           {mood === "sleepy" && (
-            <text className="c-zzz" x={cx + f.dx + 14} y={f.ey - 16} fontSize="15" fontWeight="800" fill="#fff" fontFamily="sans-serif">
+            <text className="c-zzz" x={cx + f.dx + 14} y={f.ey - 16} fontSize="16" fontWeight="900" fill="#fff" fontFamily="sans-serif">
               z
             </text>
           )}
         </g>
 
-        {/* 팔 + 장갑 (머리 앞에 나와야 만세 할 때 보인다) */}
+        {/* 팔 + 손가락 장갑 (진짜 캐릭터 같은 도톰하고 활동적인 팔) */}
         <g className="c-arm-l">
-          <line x1="46" y1="92" x2="33" y2="113" stroke={limb} strokeWidth="7.5" strokeLinecap="round" />
-          <circle cx="31.5" cy="115" r="7.2" fill={GLOVE} stroke={GLOVE_EDGE} strokeWidth="1.2" />
+          {/* 팔뚝 */}
+          <path d="M44 88 Q32 102 30 114" fill="none" stroke={limbColor} strokeWidth="9" strokeLinecap="round" />
+          {/* 손 & 엄지손가락 */}
+          <circle cx="28" cy="116" r="8" fill={SNEAKER_WHITE} stroke={SNEAKER_EDGE} strokeWidth="1.2" />
+          <circle cx="34" cy="113" r="3.5" fill={SNEAKER_WHITE} stroke={SNEAKER_EDGE} strokeWidth="1.2" />
         </g>
         <g className="c-arm-r">
-          <line x1="74" y1="92" x2="87" y2="113" stroke={limb} strokeWidth="7.5" strokeLinecap="round" />
-          <circle cx="88.5" cy="115" r="7.2" fill={GLOVE} stroke={GLOVE_EDGE} strokeWidth="1.2" />
+          {/* 팔뚝 */}
+          <path d="M76 88 Q88 102 90 114" fill="none" stroke={limbColor} strokeWidth="9" strokeLinecap="round" />
+          {/* 손 & 엄지손가락 */}
+          <circle cx="92" cy="116" r="8" fill={SNEAKER_WHITE} stroke={SNEAKER_EDGE} strokeWidth="1.2" />
+          <circle cx="86" cy="113" r="3.5" fill={SNEAKER_WHITE} stroke={SNEAKER_EDGE} strokeWidth="1.2" />
         </g>
       </g>
     </svg>
