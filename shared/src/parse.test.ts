@@ -30,8 +30,8 @@ test("정답:/보기①~④ 형식", () => {
   assert.deepEqual(r.questions.map((q) => q.type), ["ox", "ox", "choice", "choice"]);
   assert.deepEqual(r.questions.map((q) => q.answerIndex), [0, 1, 2, 3]);
   assert.equal(r.questions[2].choices[2], "다시는 홍수로 세상을 멸하지 않겠다는 언약의 증거로");
-  assert.equal(r.questions[0].timeLimitSec, 15);
-  assert.equal(r.questions[2].timeLimitSec, 20);
+  assert.equal(r.questions[0].timeLimitSec, 10);
+  assert.equal(r.questions[2].timeLimitSec, 10);
 });
 
 test("'(O / X)' 표시와 '답 :' 표기는 정리됨", () => {

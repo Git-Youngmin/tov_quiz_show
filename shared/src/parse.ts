@@ -73,7 +73,7 @@ export function parseQuizText(raw: string): ParseResult {
         text,
         choices: ["O", "X", "", ""],
         answerIndex: d.answer.index as AnswerIndex,
-        timeLimitSec: QUIZ_LIMITS.timeDefaultOx,
+        timeLimitSec: QUIZ_LIMITS.timeDefault,
       });
       return;
     }

@@ -35,7 +35,7 @@ const blankQuestion = (type: QuestionType = "ox"): DraftQuestion => ({
   text: "",
   choices: ["", "", "", ""],
   answerIndex: 0,
-  timeLimitSec: type === "ox" ? QUIZ_LIMITS.timeDefaultOx : QUIZ_LIMITS.timeDefault,
+  timeLimitSec: QUIZ_LIMITS.timeDefault,
 });
 const isBlank = (q: DraftQuestion) => !q.text.trim() && q.choices.every((c) => !c.trim());
 const blankDraft = (): Draft => ({ id: null, title: "", questions: [blankQuestion()] });
@@ -352,14 +352,17 @@ function Editor() {
                   <label className="ml-auto flex items-center gap-2 text-sm">
                     제한 시간
                     <input
-                      type="number"
-                      min={QUIZ_LIMITS.timeMin}
-                      max={QUIZ_LIMITS.timeMax}
+                      type="range"
+                      min={QUIZ_LIMITS.timeSliderMin}
+                      max={QUIZ_LIMITS.timeSliderMax}
+                      step={1}
                       value={q.timeLimitSec}
-                      onChange={(e) => editQuestion(i, { timeLimitSec: Math.round(Number(e.target.value)) })}
-                      className="w-20 rounded-lg bg-white px-2 py-1 text-center text-navy-950 outline-none"
+                      onChange={(e) => editQuestion(i, { timeLimitSec: Number(e.target.value) })}
+                      aria-label={`${i + 1}번 문제 제한 시간`}
+                      aria-valuetext={`${q.timeLimitSec}초`}
+                      className="h-2 w-28 cursor-pointer accent-gold-400 sm:w-40"
                     />
-                    초
+                    <output className="w-10 text-right text-base font-bold tabular-nums text-gold-200">{q.timeLimitSec}초</output>
                   </label>
                   <div className="flex gap-1" role="group" aria-label={`${i + 1}번 문제 도구`}>
                     <IconBtn label="위로" disabled={i === 0} onClick={() => move(i, i - 1)}>↑</IconBtn>

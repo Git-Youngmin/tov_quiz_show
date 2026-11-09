@@ -7,8 +7,11 @@ export const QUIZ_LIMITS = {
   choiceMax: 80,
   timeMin: 5,
   timeMax: 120,
-  timeDefault: 20,
-  timeDefaultOx: 15,
+  /** 새 문제의 기본 제한 시간(초) — O/X · 4지선다 공통 */
+  timeDefault: 10,
+  /** 편집 화면 슬라이더 범위(초). 저장 가능 범위(timeMin~timeMax)는 더 넓다 */
+  timeSliderMin: 10,
+  timeSliderMax: 20,
 } as const;
 
 export type ValidationResult = { ok: true; value: QuizInput } | { ok: false; error: string };
