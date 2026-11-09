@@ -1,8 +1,17 @@
+import { useEffect } from "react";
 import { Link } from "react-router-dom";
 import { SoundToggle } from "../components/SoundToggle.tsx";
+import { sound } from "../audio/ClassicalBgmEngine.ts";
 
 /** 메인 화면: TOV QUIZ 타이틀 + 버튼 2개(문제 만들기 / PLAY)만 */
 export default function HomePage() {
+  useEffect(() => {
+    sound.setTrack("lobby");
+    return () => {
+      sound.setTrack("off");
+    };
+  }, []);
+
   return (
     <main className="relative mx-auto flex min-h-screen max-w-3xl flex-col items-center justify-center gap-12 px-5 py-10">
       <div className="absolute top-6 right-6">
