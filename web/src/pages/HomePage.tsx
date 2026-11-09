@@ -1,9 +1,14 @@
 import { Link } from "react-router-dom";
+import { SoundToggle } from "../components/SoundToggle.tsx";
 
 /** 메인 화면: TOV QUIZ 타이틀 + 버튼 2개(문제 만들기 / PLAY)만 */
 export default function HomePage() {
   return (
-    <main className="mx-auto flex min-h-screen max-w-3xl flex-col items-center justify-center gap-12 px-5 py-10">
+    <main className="relative mx-auto flex min-h-screen max-w-3xl flex-col items-center justify-center gap-12 px-5 py-10">
+      <div className="absolute top-6 right-6">
+        <SoundToggle />
+      </div>
+
       <div className="relative w-full text-center">
         {/* 화려하고 고급스러운 반짝이는 TOV QUIZ 타이포그래피 (Otter-bot 레퍼런스 스타일) */}
         <div className="relative mx-auto mt-5 max-w-3xl select-none" style={{ animationDelay: "0.08s" }}>

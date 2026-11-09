@@ -15,6 +15,8 @@ import { useCountdown } from "../lib/useCountdown.ts";
 import { useRoom } from "../lib/useRoom.ts";
 import { AnswerButton } from "../components/AnswerButton.tsx";
 import { COLOR_HEX, COLOR_LABEL, CharacterAvatar, SHAPE_NICK } from "../components/CharacterAvatar.tsx";
+import { SoundToggle } from "../components/SoundToggle.tsx";
+import { sound } from "../audio/ClassicalBgmEngine.ts";
 
 /**
  * 참가자 입장 페이지 (카훗처럼 QR 로 바로 들어오는 독립된 페이지 — 홈으로 가는 링크 없음)
@@ -222,12 +224,23 @@ function PlayerGame({ pin, profile, onEditProfile }: { pin: string; profile: Pro
   const ranking = rankPlayers(state);
   const myRank = ranking.find((e) => e.playerId === playerId);
 
+  useEffect(() => {
+    if (r.myResult) {
+      if (r.myResult.correct) {
+        sound.playCorrect();
+      } else {
+        sound.playWrong();
+      }
+    }
+  }, [r.myResult]);
+
   return (
     <main className="flex min-h-full flex-col">
       <header className="flex items-center gap-3 bg-black/20 px-4 py-2">
         <CharacterAvatar character={me.character} size={38} bust />
         <span className="flex-1 truncate font-bold">{me.nickname}</span>
         {!r.connected && <span className="text-sm text-red-300">재접속 중…</span>}
+        <SoundToggle />
         <span className="rounded-full bg-white/10 px-3 py-1 font-mono font-bold">{me.score.toLocaleString()}</span>
       </header>
 
@@ -302,6 +315,13 @@ function Remote({
   onAnswer: (choice: AnswerIndex) => void;
 }) {
   const left = useCountdown(q.endsAt);
+
+  useEffect(() => {
+    if (left <= 5 && left > 0) {
+      sound.playTick();
+    }
+  }, [left]);
+
   return (
     <section className="flex flex-1 flex-col gap-3 p-3">
       <p className="text-center text-lg font-bold">

@@ -11,6 +11,8 @@ import { AnswerButton } from "../components/AnswerButton.tsx";
 import { CharacterAvatar } from "../components/CharacterAvatar.tsx";
 import { Leaderboard } from "../components/Leaderboard.tsx";
 import { Podium } from "../components/Podium.tsx";
+import { SoundToggle } from "../components/SoundToggle.tsx";
+import { sound } from "../audio/ClassicalBgmEngine.ts";
 
 interface HostRoom {
   pin: string;
@@ -94,6 +96,31 @@ function HostRoomView({ room, onExit }: { room: HostRoom; onExit: () => void }) 
   const r = useRoom({ pin: room.pin, role: "host", hostToken: room.hostToken });
   const state = r.state;
 
+  // 화면 상태에 따라 오케스트라 클래식 BGM 트랙 자동 전환
+  useEffect(() => {
+    if (!state) return;
+    switch (state.status) {
+      case "lobby":
+        sound.setTrack("lobby");
+        break;
+      case "playing":
+        sound.setTrack("playing");
+        break;
+      case "leaderboard":
+        sound.setTrack("leaderboard");
+        break;
+      case "finished":
+        sound.setTrack("finished");
+        break;
+    }
+  }, [state?.status]);
+
+  useEffect(() => {
+    return () => {
+      sound.setTrack("off");
+    };
+  }, []);
+
   if (!state) return <FullMessage text={r.error ?? "방에 연결하는 중…"} />;
 
   const players = Object.entries(state.players);
@@ -102,9 +129,12 @@ function HostRoomView({ room, onExit }: { room: HostRoom; onExit: () => void }) 
   return (
     <main className="flex min-h-full flex-col">
       <header className="flex items-center justify-between bg-black/20 px-6 py-3 text-lg">
-        <span>
-          PIN <b className="font-mono text-2xl tracking-widest">{room.pin}</b>
-        </span>
+        <div className="flex items-center gap-4">
+          <span>
+            PIN <b className="font-mono text-2xl tracking-widest">{room.pin}</b>
+          </span>
+          <SoundToggle />
+        </div>
         <span>
           {state.status !== "lobby" && `${state.currentQuestionIndex + 1} / ${state.totalQuestions} · `}
           👥 {players.filter(([, p]) => p.connected).length}명
@@ -228,6 +258,13 @@ function HostQuestion({
   onSkip: () => void;
 }) {
   const left = useCountdown(q.endsAt);
+
+  useEffect(() => {
+    if (left <= 5 && left > 0) {
+      sound.playTick();
+    }
+  }, [left]);
+
   return (
     <section className="flex flex-1 flex-col gap-6 p-8">
       <h2 className="rounded-3xl bg-white p-8 text-center text-4xl font-bold text-navy-950 sm:text-5xl">{q.question.text}</h2>
