@@ -13,7 +13,7 @@ export function Leaderboard({ entries, highlightId }: { entries: RankEntry[]; hi
           }`}
         >
           <span className="w-8 text-xl font-black">{e.rank}</span>
-          <CharacterAvatar character={e.character} size={36} mood={e.rank === 1 ? "cheer" : "idle"} seed={e.playerId} />
+          <CharacterAvatar character={e.character} size={38} bust mood={e.rank === 1 ? "cheer" : "idle"} seed={e.playerId} />
           <span className="flex-1 truncate text-lg font-bold">{e.nickname}</span>
           {e.streak >= 2 && <span className="text-sm">🔥{e.streak}</span>}
           <span className="font-mono text-lg font-bold">{e.score.toLocaleString()}</span>

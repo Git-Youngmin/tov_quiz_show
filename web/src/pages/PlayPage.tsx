@@ -14,7 +14,7 @@ import { rankPlayers } from "../lib/ranking.ts";
 import { useCountdown } from "../lib/useCountdown.ts";
 import { useRoom } from "../lib/useRoom.ts";
 import { AnswerButton } from "../components/AnswerButton.tsx";
-import { COLOR_HEX, COLOR_LABEL, CharacterAvatar, SHAPE_LABEL } from "../components/CharacterAvatar.tsx";
+import { COLOR_HEX, COLOR_LABEL, CharacterAvatar, SHAPE_NICK } from "../components/CharacterAvatar.tsx";
 
 /**
  * 참가자 플로우: PIN 입력(또는 QR 의 ?pin=) → 닉네임·캐릭터 → 대기 → 4색 리모컨 → 결과
@@ -134,8 +134,8 @@ function ProfileForm({ pin, onSubmit, onBack }: { pin: string; onSubmit: (p: Pro
                   character.shape === shape ? "bg-white/30 ring-2 ring-gold-400" : "bg-white/10"
                 }`}
               >
-                <CharacterAvatar character={{ ...character, shape }} size={44} />
-                <span className="text-sm">{SHAPE_LABEL[shape]}</span>
+                <CharacterAvatar character={{ ...character, shape }} size={46} bust />
+                <span className="text-sm">{SHAPE_NICK[shape]}</span>
               </button>
             ))}
           </div>
@@ -205,7 +205,7 @@ function PlayerGame({ pin, profile, onEditProfile }: { pin: string; profile: Pro
   return (
     <main className="flex min-h-full flex-col">
       <header className="flex items-center gap-3 bg-black/20 px-4 py-2">
-        <CharacterAvatar character={me.character} size={36} />
+        <CharacterAvatar character={me.character} size={38} bust />
         <span className="flex-1 truncate font-bold">{me.nickname}</span>
         {!r.connected && <span className="text-sm text-red-300">재접속 중…</span>}
         <span className="rounded-full bg-white/10 px-3 py-1 font-mono font-bold">{me.score.toLocaleString()}</span>

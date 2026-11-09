@@ -4,12 +4,12 @@ import { CharacterAvatar, type Mood } from "../components/CharacterAvatar.tsx";
 
 /** 홈 화면 무대에 서 있는 친구들 (모양 4 × 색 6 중 골라서) */
 const CAST: { character: Character; mood: Mood; size: number }[] = [
-  { character: { shape: "sphere", color: "yellow" }, mood: "idle", size: 84 },
-  { character: { shape: "capsule", color: "blue" }, mood: "wave", size: 100 },
-  { character: { shape: "cone", color: "purple" }, mood: "cheer", size: 92 },
-  { character: { shape: "box", color: "red" }, mood: "idle", size: 104 },
-  { character: { shape: "capsule", color: "green" }, mood: "sleepy", size: 90 },
-  { character: { shape: "sphere", color: "orange" }, mood: "wave", size: 86 },
+  { character: { shape: "sphere", color: "yellow" }, mood: "idle", size: 109 },
+  { character: { shape: "capsule", color: "blue" }, mood: "wave", size: 130 },
+  { character: { shape: "cone", color: "purple" }, mood: "cheer", size: 120 },
+  { character: { shape: "box", color: "red" }, mood: "idle", size: 135 },
+  { character: { shape: "capsule", color: "green" }, mood: "sleepy", size: 117 },
+  { character: { shape: "sphere", color: "orange" }, mood: "wave", size: 112 },
 ];
 
 const STEPS = [
@@ -49,7 +49,7 @@ export default function HomePage() {
         <section aria-label="캐릭터 친구들" className="relative mt-10 sm:mt-14">
           <div className="flex items-end justify-center gap-1 sm:gap-4">
             {CAST.map((c, i) => (
-              <CharacterAvatar key={i} character={c.character} mood={c.mood} seed={i * 7 + 3} size={c.size} popIn className="max-w-[16vw]" />
+              <CharacterAvatar key={i} character={c.character} mood={c.mood} seed={i * 7 + 3} size={c.size} popIn className="max-w-[17vw]" />
             ))}
           </div>
           <div className="mx-auto -mt-1 h-px max-w-3xl bg-gradient-to-r from-transparent via-white/40 to-transparent" />

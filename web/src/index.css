@@ -175,10 +175,14 @@ body {
 }
 
 /* ───────────── 캐릭터 애니메이션 ─────────────
-   각 SVG 조각은 transform-box: fill-box 로 자기 중심 기준으로 움직인다. */
+   머리·팔·다리가 각자의 관절(어깨·엉덩이·목)을 기준으로 따로 움직인다.
+   transform-box: view-box 로 SVG 좌표(px)를 그대로 회전축에 쓴다. */
 .tob-char {
   overflow: visible;
   --d: 0s; /* 캐릭터마다 어긋나게 하는 지연 */
+}
+.tob-char.tob-bust {
+  overflow: hidden;
 }
 .tob-char * {
   transform-box: fill-box;
@@ -186,32 +190,36 @@ body {
 .tob-char .c-body {
   transform-origin: 50% 100%;
 }
-.tob-char .c-shadow {
-  transform-origin: 50% 50%;
-}
 .tob-char .c-eyes {
   transform-origin: 50% 50%;
 }
+/* 정적인 장식의 rotate(a x y) 가 fill-box 기준과 겹쳐 틀어지지 않게 */
+.tob-char .c-static {
+  transform-box: view-box;
+  transform-origin: 0 0;
+}
+.tob-char .c-head {
+  transform-box: view-box;
+  transform-origin: 60px 86px;
+}
 .tob-char .c-arm-l {
-  transform-origin: 85% 15%;
+  transform-box: view-box;
+  transform-origin: 46px 92px;
 }
 .tob-char .c-arm-r {
-  transform-origin: 15% 15%;
+  transform-box: view-box;
+  transform-origin: 74px 92px;
+}
+.tob-char .c-leg-l {
+  transform-box: view-box;
+  transform-origin: 52px 112px;
+}
+.tob-char .c-leg-r {
+  transform-box: view-box;
+  transform-origin: 68px 112px;
 }
 
-/* idle: 숨 쉬듯 둥실 + 눈 깜빡 + 두리번 */
-.tob-char[data-mood="idle"] .c-body {
-  animation: tob-bob 2.8s ease-in-out var(--d) infinite;
-}
-.tob-char[data-mood="idle"] .c-shadow {
-  animation: tob-shadow 2.8s ease-in-out var(--d) infinite;
-}
-.tob-char[data-mood="idle"] .c-arm-l {
-  animation: tob-arm-l 2.8s ease-in-out var(--d) infinite;
-}
-.tob-char[data-mood="idle"] .c-arm-r {
-  animation: tob-arm-r 2.8s ease-in-out var(--d) infinite;
-}
+/* 공통: 눈 깜빡 + 두리번 */
 .tob-char .c-eyes {
   animation: tob-blink 5s linear var(--d) infinite;
 }
@@ -219,7 +227,41 @@ body {
   animation: tob-look 7s ease-in-out var(--d) infinite;
 }
 
-/* happy/cheer: 폴짝 + 팔 번쩍 */
+/* idle: 숨 쉬듯 둥실, 고개를 갸웃, 팔을 살랑 */
+.tob-char[data-mood="idle"] .c-body,
+.tob-char[data-mood="wave"] .c-body {
+  animation: tob-bob 3s ease-in-out var(--d) infinite;
+}
+.tob-char[data-mood="idle"] .c-shadow,
+.tob-char[data-mood="wave"] .c-shadow {
+  animation: tob-shadow 3s ease-in-out var(--d) infinite;
+}
+.tob-char[data-mood="idle"] .c-head,
+.tob-char[data-mood="wave"] .c-head {
+  animation: tob-tilt 6s ease-in-out var(--d) infinite;
+}
+.tob-char[data-mood="idle"] .c-arm-l {
+  animation: tob-sway-l 3s ease-in-out var(--d) infinite;
+}
+.tob-char[data-mood="idle"] .c-arm-r {
+  animation: tob-sway-r 3s ease-in-out var(--d) infinite;
+}
+.tob-char[data-mood="idle"] .c-leg-l {
+  animation: tob-step-l 6s ease-in-out var(--d) infinite;
+}
+.tob-char[data-mood="idle"] .c-leg-r {
+  animation: tob-step-r 6s ease-in-out var(--d) infinite;
+}
+
+/* wave: 오른손을 번쩍 들고 흔들기 */
+.tob-char[data-mood="wave"] .c-arm-l {
+  animation: tob-sway-l 3s ease-in-out var(--d) infinite;
+}
+.tob-char[data-mood="wave"] .c-arm-r {
+  animation: tob-wave 0.9s ease-in-out var(--d) infinite;
+}
+
+/* happy/cheer: 폴짝 + 만세 + 다리 구부렸다 펴기 */
 .tob-char[data-mood="happy"] .c-body,
 .tob-char[data-mood="cheer"] .c-body {
   animation: tob-hop 0.9s cubic-bezier(0.3, 0, 0.3, 1) var(--d) infinite;
@@ -227,6 +269,10 @@ body {
 .tob-char[data-mood="happy"] .c-shadow,
 .tob-char[data-mood="cheer"] .c-shadow {
   animation: tob-hop-shadow 0.9s cubic-bezier(0.3, 0, 0.3, 1) var(--d) infinite;
+}
+.tob-char[data-mood="happy"] .c-head,
+.tob-char[data-mood="cheer"] .c-head {
+  animation: tob-tilt 0.9s ease-in-out var(--d) infinite;
 }
 .tob-char[data-mood="happy"] .c-arm-l,
 .tob-char[data-mood="cheer"] .c-arm-l {
@@ -236,27 +282,46 @@ body {
 .tob-char[data-mood="cheer"] .c-arm-r {
   animation: tob-cheer-r 0.9s ease-in-out var(--d) infinite;
 }
-/* sad: 풀 죽어서 살짝 떨림 */
+.tob-char[data-mood="happy"] .c-leg-l,
+.tob-char[data-mood="cheer"] .c-leg-l {
+  animation: tob-kick-l 0.9s ease-in-out var(--d) infinite;
+}
+.tob-char[data-mood="happy"] .c-leg-r,
+.tob-char[data-mood="cheer"] .c-leg-r {
+  animation: tob-kick-r 0.9s ease-in-out var(--d) infinite;
+}
+
+/* sad: 어깨가 축 처지고 고개를 숙임 */
 .tob-char[data-mood="sad"] .c-body {
   animation: tob-sad 3s ease-in-out var(--d) infinite;
+}
+.tob-char[data-mood="sad"] .c-head {
+  transform: rotate(5deg) translateY(2px);
+  animation: tob-sad-head 3s ease-in-out var(--d) infinite;
+}
+.tob-char[data-mood="sad"] .c-arm-l {
+  transform: rotate(-26deg);
+}
+.tob-char[data-mood="sad"] .c-arm-r {
+  transform: rotate(26deg);
 }
 .tob-char[data-mood="sad"] .c-pupils {
   animation: none;
   transform: translate(0, 2px);
 }
-/* wave: 손 흔들기 (홈 화면) */
-.tob-char[data-mood="wave"] .c-body {
-  animation: tob-bob 3.2s ease-in-out var(--d) infinite;
-}
-.tob-char[data-mood="wave"] .c-shadow {
-  animation: tob-shadow 3.2s ease-in-out var(--d) infinite;
-}
-.tob-char[data-mood="wave"] .c-arm-r {
-  animation: tob-wave 1s ease-in-out var(--d) infinite;
-}
-/* sleepy: 졸기 */
+
+/* sleepy: 꾸벅꾸벅 */
 .tob-char[data-mood="sleepy"] .c-body {
   animation: tob-doze 4s ease-in-out var(--d) infinite;
+}
+.tob-char[data-mood="sleepy"] .c-head {
+  animation: tob-nod 4s ease-in-out var(--d) infinite;
+}
+.tob-char[data-mood="sleepy"] .c-arm-l {
+  transform: rotate(-12deg);
+}
+.tob-char[data-mood="sleepy"] .c-arm-r {
+  transform: rotate(12deg);
 }
 .tob-char .c-zzz {
   opacity: 0;
@@ -269,7 +334,7 @@ body {
     transform: translateY(0) scale(1, 1);
   }
   50% {
-    transform: translateY(-3.5px) scale(0.985, 1.025);
+    transform: translateY(-2.5px) scale(0.99, 1.015);
   }
 }
 @keyframes tob-shadow {
@@ -279,26 +344,57 @@ body {
     opacity: 0.5;
   }
   50% {
-    transform: scale(0.88);
-    opacity: 0.36;
+    transform: scale(0.9);
+    opacity: 0.38;
   }
 }
-@keyframes tob-arm-l {
+@keyframes tob-tilt {
   0%,
+  100% {
+    transform: rotate(-2.2deg);
+  }
+  50% {
+    transform: rotate(2.2deg);
+  }
+}
+@keyframes tob-sway-l {
+  0%,
+  100% {
+    transform: rotate(-3deg);
+  }
+  50% {
+    transform: rotate(7deg);
+  }
+}
+@keyframes tob-sway-r {
+  0%,
+  100% {
+    transform: rotate(3deg);
+  }
+  50% {
+    transform: rotate(-7deg);
+  }
+}
+@keyframes tob-step-l {
+  0%,
+  40%,
   100% {
     transform: rotate(0);
   }
-  50% {
-    transform: rotate(8deg);
+  48%,
+  58% {
+    transform: rotate(-6deg);
   }
 }
-@keyframes tob-arm-r {
+@keyframes tob-step-r {
   0%,
+  70%,
   100% {
     transform: rotate(0);
   }
-  50% {
-    transform: rotate(-8deg);
+  78%,
+  88% {
+    transform: rotate(6deg);
   }
 }
 @keyframes tob-blink {
@@ -319,82 +415,118 @@ body {
   }
   26%,
   44% {
-    transform: translate(2.2px, -0.6px);
+    transform: translate(2.4px, -0.6px);
   }
   54%,
   72% {
-    transform: translate(-2.2px, 0.4px);
+    transform: translate(-2.4px, 0.5px);
   }
 }
 @keyframes tob-hop {
   0%,
   100% {
-    transform: translateY(0) scale(1.1, 0.88);
+    transform: translateY(0) scale(1.07, 0.9);
   }
   18% {
-    transform: translateY(0) scale(0.92, 1.1);
+    transform: translateY(0) scale(0.94, 1.08);
   }
   50% {
-    transform: translateY(-16px) scale(0.96, 1.06);
+    transform: translateY(-18px) scale(0.97, 1.04);
   }
   82% {
-    transform: translateY(0) scale(0.92, 1.1);
+    transform: translateY(0) scale(0.94, 1.08);
   }
 }
 @keyframes tob-hop-shadow {
   0%,
   100% {
-    transform: scale(1.1);
+    transform: scale(1.08);
     opacity: 0.5;
   }
   50% {
-    transform: scale(0.62);
-    opacity: 0.25;
+    transform: scale(0.6);
+    opacity: 0.24;
   }
 }
 @keyframes tob-cheer-l {
   0%,
   100% {
-    transform: rotate(155deg);
+    transform: rotate(106deg);
   }
   50% {
-    transform: rotate(125deg);
+    transform: rotate(82deg);
   }
 }
 @keyframes tob-cheer-r {
   0%,
   100% {
-    transform: rotate(-155deg);
+    transform: rotate(-106deg);
   }
   50% {
-    transform: rotate(-125deg);
+    transform: rotate(-82deg);
   }
 }
-@keyframes tob-sad {
+@keyframes tob-kick-l {
   0%,
   100% {
-    transform: translateY(2px) scale(1.02, 0.96);
+    transform: rotate(0);
   }
   50% {
-    transform: translateY(3px) scale(1.03, 0.95);
+    transform: rotate(14deg);
+  }
+}
+@keyframes tob-kick-r {
+  0%,
+  100% {
+    transform: rotate(0);
+  }
+  50% {
+    transform: rotate(-14deg);
   }
 }
 @keyframes tob-wave {
   0%,
   100% {
-    transform: rotate(-150deg);
+    transform: rotate(-102deg);
   }
   50% {
-    transform: rotate(-105deg);
+    transform: rotate(-74deg);
+  }
+}
+@keyframes tob-sad {
+  0%,
+  100% {
+    transform: translateY(2px) scale(1.01, 0.97);
+  }
+  50% {
+    transform: translateY(3px) scale(1.02, 0.96);
+  }
+}
+@keyframes tob-sad-head {
+  0%,
+  100% {
+    transform: rotate(5deg) translateY(2px);
+  }
+  50% {
+    transform: rotate(7deg) translateY(3px);
   }
 }
 @keyframes tob-doze {
   0%,
   100% {
-    transform: rotate(-3deg) translateY(1px);
+    transform: translateY(1px);
   }
   50% {
-    transform: rotate(3deg) translateY(3px);
+    transform: translateY(2.5px);
+  }
+}
+@keyframes tob-nod {
+  0%,
+  100% {
+    transform: rotate(-4deg) translateY(0);
+  }
+  50% {
+    transform: rotate(8deg) translateY(3px);
   }
 }
 @keyframes tob-zzz {
