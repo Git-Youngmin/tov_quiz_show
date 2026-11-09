@@ -1,4 +1,5 @@
 import { Link, Route, Routes } from "react-router-dom";
+import { AuroraBackground } from "./components/AuroraBackground.tsx";
 import HomePage from "./pages/HomePage.tsx";
 import HostPage from "./pages/HostPage.tsx";
 import PlayPage from "./pages/PlayPage.tsx";
@@ -6,6 +7,8 @@ import QuizEditorPage from "./pages/QuizEditorPage.tsx";
 
 export default function App() {
   return (
+    <>
+    <AuroraBackground />
     <Routes>
       <Route path="/" element={<HomePage />} />
       <Route path="/host" element={<HostPage />} />
@@ -25,5 +28,6 @@ export default function App() {
         }
       />
     </Routes>
+    </>
   );
 }

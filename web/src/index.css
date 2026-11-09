@@ -1,17 +1,450 @@
 @import "tailwindcss";
 
+/* ───── 디자인 토큰: 경원교회 홈페이지의 네이비 + 골드를 바탕으로 ───── */
 @theme {
-  --font-sans: "Pretendard", "Apple SD Gothic Neo", "Noto Sans KR", system-ui, sans-serif;
+  --font-sans: "Pretendard Variable", "Pretendard", "Apple SD Gothic Neo", "Noto Sans KR", system-ui, sans-serif;
+  --font-serif: "Nanum Myeongjo", "Noto Serif KR", serif;
+
+  --color-navy-950: #0b1428;
+  --color-navy-900: #15213c; /* 교회 홈페이지 --navy-deep */
+  --color-navy-800: #1d2d50; /* --navy */
+  --color-navy-700: #2b3f6b; /* --navy-soft */
+  --color-navy-600: #3c5694;
+  --color-gold-100: #f3ece0; /* --gold-soft */
+  --color-gold-200: #ecdcbc;
+  --color-gold-300: #e2c898;
+  --color-gold-400: #d1ad72;
+  --color-gold-500: #b08d57; /* --gold */
+  --color-mist: #c3cde6; /* 어두운 배경 위 보조 글자 */
+
+  --animate-pop: tob-pop 0.55s cubic-bezier(0.2, 1.4, 0.4, 1) both;
+  --animate-rise: tob-rise 0.7s cubic-bezier(0.2, 0.8, 0.2, 1) both;
 }
 
 html,
 body,
 #root {
-  height: 100%;
+  min-height: 100%;
 }
-
+html {
+  scroll-behavior: smooth;
+}
 body {
-  @apply bg-violet-950 text-white antialiased;
+  @apply bg-navy-950 font-sans text-white antialiased;
+  word-break: keep-all;
   -webkit-tap-highlight-color: transparent;
   overscroll-behavior: none;
+}
+#root {
+  position: relative;
+  z-index: 0;
+  min-height: 100vh;
+  min-height: 100dvh;
+  display: flex;
+  flex-direction: column;
+}
+/* 각 화면(main 등)이 남는 높이를 채우도록 — 오로라(fixed)는 흐름 밖이라 영향 없음 */
+#root > :not(.aurora) {
+  flex: 1 1 auto;
+}
+.font-serif-kr {
+  font-family: var(--font-serif);
+}
+
+/* 유리 느낌 카드 */
+.glass {
+  background: linear-gradient(160deg, rgb(255 255 255 / 0.13), rgb(255 255 255 / 0.05));
+  border: 1px solid rgb(255 255 255 / 0.16);
+  box-shadow:
+    0 10px 30px -12px rgb(2 8 24 / 0.6),
+    inset 0 1px 0 rgb(255 255 255 / 0.18);
+  backdrop-filter: blur(14px);
+  -webkit-backdrop-filter: blur(14px);
+}
+.btn-gold {
+  background: linear-gradient(180deg, var(--color-gold-300), var(--color-gold-400));
+  color: var(--color-navy-950);
+  box-shadow:
+    0 6px 0 var(--color-gold-500),
+    0 14px 24px -8px rgb(0 0 0 / 0.5);
+  transition:
+    transform 0.12s,
+    box-shadow 0.12s,
+    filter 0.2s;
+}
+.btn-gold:hover:not(:disabled) {
+  filter: brightness(1.06);
+}
+.btn-gold:active:not(:disabled) {
+  transform: translateY(4px);
+  box-shadow:
+    0 2px 0 var(--color-gold-500),
+    0 6px 12px -6px rgb(0 0 0 / 0.5);
+}
+
+/* ───────────── 오로라 배경 (스크롤하면 함께 움직임) ─────────────
+   --sy(스크롤 px)는 AuroraBackground 가 갱신한다.
+   바깥 요소는 스크롤에 반응(parallax), 안쪽 요소는 혼자 천천히 흐른다. */
+.aurora {
+  position: fixed;
+  inset: 0;
+  z-index: -1;
+  overflow: hidden;
+  pointer-events: none;
+  background:
+    radial-gradient(120% 80% at 50% 110%, #1b2c58 0%, transparent 60%),
+    linear-gradient(180deg, #060d1f 0%, #0b1428 55%, #101c3a 100%);
+}
+.aurora__stars {
+  position: absolute;
+  inset: 0;
+  opacity: 0.7;
+  background-image:
+    radial-gradient(1.2px 1.2px at 12% 18%, #fff, transparent),
+    radial-gradient(1px 1px at 34% 62%, #fff9, transparent),
+    radial-gradient(1.4px 1.4px at 58% 12%, #fff, transparent),
+    radial-gradient(1px 1px at 76% 44%, #fff9, transparent),
+    radial-gradient(1.2px 1.2px at 90% 80%, #fff, transparent),
+    radial-gradient(1px 1px at 22% 88%, #fff9, transparent),
+    radial-gradient(1px 1px at 66% 72%, #fff8, transparent);
+  animation: aurora-twinkle 5s ease-in-out infinite alternate;
+  transform: translate3d(0, calc(var(--sy, 0) * -0.04px), 0);
+}
+.aurora__layer {
+  position: absolute;
+  left: var(--x);
+  top: var(--y);
+  width: var(--w);
+  height: var(--h);
+  will-change: transform;
+  transform: translate3d(calc(var(--sy, 0) * var(--kx) * 1px), calc(var(--sy, 0) * var(--ky) * 1px), 0)
+    rotate(calc(var(--sy, 0) * var(--kr, 0) * 1deg));
+}
+.aurora__blob {
+  width: 100%;
+  height: 100%;
+  border-radius: 50%;
+  background: radial-gradient(closest-side, var(--c), transparent 72%);
+  mix-blend-mode: screen;
+  opacity: var(--o, 0.55);
+  animation: aurora-drift var(--t, 26s) ease-in-out infinite alternate;
+  animation-delay: var(--d, 0s);
+}
+.aurora__ribbon {
+  width: 100%;
+  height: 100%;
+  background: linear-gradient(to top, transparent 0%, var(--c) 45%, var(--c2) 70%, transparent 100%);
+  filter: blur(34px);
+  mix-blend-mode: screen;
+  opacity: var(--o, 0.4);
+  transform-origin: 50% 100%;
+  animation: aurora-sway var(--t, 14s) ease-in-out infinite alternate;
+  animation-delay: var(--d, 0s);
+}
+@keyframes aurora-drift {
+  0% {
+    transform: translate3d(-6%, -4%, 0) scale(0.95);
+  }
+  100% {
+    transform: translate3d(8%, 6%, 0) scale(1.12);
+  }
+}
+@keyframes aurora-sway {
+  0% {
+    transform: skewX(-14deg) scaleY(0.82) scaleX(0.9);
+  }
+  100% {
+    transform: skewX(12deg) scaleY(1.05) scaleX(1.15);
+  }
+}
+@keyframes aurora-twinkle {
+  from {
+    opacity: 0.45;
+  }
+  to {
+    opacity: 0.85;
+  }
+}
+@media (max-width: 640px) {
+  .aurora__ribbon {
+    filter: blur(24px);
+  }
+  .aurora__layer--hide-sm {
+    display: none;
+  }
+}
+
+/* ───────────── 캐릭터 애니메이션 ─────────────
+   각 SVG 조각은 transform-box: fill-box 로 자기 중심 기준으로 움직인다. */
+.tob-char {
+  overflow: visible;
+  --d: 0s; /* 캐릭터마다 어긋나게 하는 지연 */
+}
+.tob-char * {
+  transform-box: fill-box;
+}
+.tob-char .c-body {
+  transform-origin: 50% 100%;
+}
+.tob-char .c-shadow {
+  transform-origin: 50% 50%;
+}
+.tob-char .c-eyes {
+  transform-origin: 50% 50%;
+}
+.tob-char .c-arm-l {
+  transform-origin: 85% 15%;
+}
+.tob-char .c-arm-r {
+  transform-origin: 15% 15%;
+}
+
+/* idle: 숨 쉬듯 둥실 + 눈 깜빡 + 두리번 */
+.tob-char[data-mood="idle"] .c-body {
+  animation: tob-bob 2.8s ease-in-out var(--d) infinite;
+}
+.tob-char[data-mood="idle"] .c-shadow {
+  animation: tob-shadow 2.8s ease-in-out var(--d) infinite;
+}
+.tob-char[data-mood="idle"] .c-arm-l {
+  animation: tob-arm-l 2.8s ease-in-out var(--d) infinite;
+}
+.tob-char[data-mood="idle"] .c-arm-r {
+  animation: tob-arm-r 2.8s ease-in-out var(--d) infinite;
+}
+.tob-char .c-eyes {
+  animation: tob-blink 5s linear var(--d) infinite;
+}
+.tob-char .c-pupils {
+  animation: tob-look 7s ease-in-out var(--d) infinite;
+}
+
+/* happy/cheer: 폴짝 + 팔 번쩍 */
+.tob-char[data-mood="happy"] .c-body,
+.tob-char[data-mood="cheer"] .c-body {
+  animation: tob-hop 0.9s cubic-bezier(0.3, 0, 0.3, 1) var(--d) infinite;
+}
+.tob-char[data-mood="happy"] .c-shadow,
+.tob-char[data-mood="cheer"] .c-shadow {
+  animation: tob-hop-shadow 0.9s cubic-bezier(0.3, 0, 0.3, 1) var(--d) infinite;
+}
+.tob-char[data-mood="happy"] .c-arm-l,
+.tob-char[data-mood="cheer"] .c-arm-l {
+  animation: tob-cheer-l 0.9s ease-in-out var(--d) infinite;
+}
+.tob-char[data-mood="happy"] .c-arm-r,
+.tob-char[data-mood="cheer"] .c-arm-r {
+  animation: tob-cheer-r 0.9s ease-in-out var(--d) infinite;
+}
+/* sad: 풀 죽어서 살짝 떨림 */
+.tob-char[data-mood="sad"] .c-body {
+  animation: tob-sad 3s ease-in-out var(--d) infinite;
+}
+.tob-char[data-mood="sad"] .c-pupils {
+  animation: none;
+  transform: translate(0, 2px);
+}
+/* wave: 손 흔들기 (홈 화면) */
+.tob-char[data-mood="wave"] .c-body {
+  animation: tob-bob 3.2s ease-in-out var(--d) infinite;
+}
+.tob-char[data-mood="wave"] .c-shadow {
+  animation: tob-shadow 3.2s ease-in-out var(--d) infinite;
+}
+.tob-char[data-mood="wave"] .c-arm-r {
+  animation: tob-wave 1s ease-in-out var(--d) infinite;
+}
+/* sleepy: 졸기 */
+.tob-char[data-mood="sleepy"] .c-body {
+  animation: tob-doze 4s ease-in-out var(--d) infinite;
+}
+.tob-char .c-zzz {
+  opacity: 0;
+  animation: tob-zzz 3s ease-in-out var(--d) infinite;
+}
+
+@keyframes tob-bob {
+  0%,
+  100% {
+    transform: translateY(0) scale(1, 1);
+  }
+  50% {
+    transform: translateY(-3.5px) scale(0.985, 1.025);
+  }
+}
+@keyframes tob-shadow {
+  0%,
+  100% {
+    transform: scale(1);
+    opacity: 0.5;
+  }
+  50% {
+    transform: scale(0.88);
+    opacity: 0.36;
+  }
+}
+@keyframes tob-arm-l {
+  0%,
+  100% {
+    transform: rotate(0);
+  }
+  50% {
+    transform: rotate(8deg);
+  }
+}
+@keyframes tob-arm-r {
+  0%,
+  100% {
+    transform: rotate(0);
+  }
+  50% {
+    transform: rotate(-8deg);
+  }
+}
+@keyframes tob-blink {
+  0%,
+  92%,
+  100% {
+    transform: scaleY(1);
+  }
+  95% {
+    transform: scaleY(0.08);
+  }
+}
+@keyframes tob-look {
+  0%,
+  18%,
+  100% {
+    transform: translate(0, 0);
+  }
+  26%,
+  44% {
+    transform: translate(2.2px, -0.6px);
+  }
+  54%,
+  72% {
+    transform: translate(-2.2px, 0.4px);
+  }
+}
+@keyframes tob-hop {
+  0%,
+  100% {
+    transform: translateY(0) scale(1.1, 0.88);
+  }
+  18% {
+    transform: translateY(0) scale(0.92, 1.1);
+  }
+  50% {
+    transform: translateY(-16px) scale(0.96, 1.06);
+  }
+  82% {
+    transform: translateY(0) scale(0.92, 1.1);
+  }
+}
+@keyframes tob-hop-shadow {
+  0%,
+  100% {
+    transform: scale(1.1);
+    opacity: 0.5;
+  }
+  50% {
+    transform: scale(0.62);
+    opacity: 0.25;
+  }
+}
+@keyframes tob-cheer-l {
+  0%,
+  100% {
+    transform: rotate(155deg);
+  }
+  50% {
+    transform: rotate(125deg);
+  }
+}
+@keyframes tob-cheer-r {
+  0%,
+  100% {
+    transform: rotate(-155deg);
+  }
+  50% {
+    transform: rotate(-125deg);
+  }
+}
+@keyframes tob-sad {
+  0%,
+  100% {
+    transform: translateY(2px) scale(1.02, 0.96);
+  }
+  50% {
+    transform: translateY(3px) scale(1.03, 0.95);
+  }
+}
+@keyframes tob-wave {
+  0%,
+  100% {
+    transform: rotate(-150deg);
+  }
+  50% {
+    transform: rotate(-105deg);
+  }
+}
+@keyframes tob-doze {
+  0%,
+  100% {
+    transform: rotate(-3deg) translateY(1px);
+  }
+  50% {
+    transform: rotate(3deg) translateY(3px);
+  }
+}
+@keyframes tob-zzz {
+  0% {
+    opacity: 0;
+    transform: translate(0, 6px) scale(0.7);
+  }
+  40% {
+    opacity: 1;
+  }
+  100% {
+    opacity: 0;
+    transform: translate(8px, -14px) scale(1.1);
+  }
+}
+@keyframes tob-pop {
+  0% {
+    opacity: 0;
+    transform: scale(0.5) translateY(14px);
+  }
+  100% {
+    opacity: 1;
+    transform: scale(1) translateY(0);
+  }
+}
+@keyframes tob-rise {
+  0% {
+    opacity: 0;
+    transform: translateY(22px);
+  }
+  100% {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .tob-char *,
+  .aurora__blob,
+  .aurora__ribbon,
+  .aurora__stars,
+  .animate-pop,
+  .animate-rise {
+    animation: none !important;
+  }
+  .aurora__layer,
+  .aurora__stars {
+    transform: none !important;
+  }
+  html {
+    scroll-behavior: auto;
+  }
 }

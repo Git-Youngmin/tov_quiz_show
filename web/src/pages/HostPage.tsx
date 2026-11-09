@@ -11,6 +11,7 @@ import { useRoom } from "../lib/useRoom.ts";
 import { AnswerButton } from "../components/AnswerButton.tsx";
 import { CharacterAvatar } from "../components/CharacterAvatar.tsx";
 import { Leaderboard } from "../components/Leaderboard.tsx";
+import { Podium } from "../components/Podium.tsx";
 
 interface HostRoom {
   pin: string;
@@ -73,13 +74,13 @@ function AdminLogin({ onLogin }: { onLogin: (pw: string) => void }) {
           onChange={(e) => setPw(e.target.value)}
           placeholder="관리자 비밀번호"
           autoFocus
-          className="w-full rounded-xl bg-white px-4 py-3 text-violet-950 outline-none"
+          className="w-full rounded-xl bg-white px-4 py-3 text-navy-950 outline-none"
         />
         {error && <p className="text-sm text-red-300">{error}</p>}
-        <button disabled={busy || !pw} className="w-full rounded-xl bg-amber-400 py-3 font-bold text-violet-950 disabled:opacity-50">
+        <button disabled={busy || !pw} className="w-full rounded-xl bg-gold-400 py-3 font-bold text-navy-950 disabled:opacity-50">
           {busy ? "확인 중…" : "로그인"}
         </button>
-        <Link to="/" className="block text-center text-sm text-violet-200 underline">
+        <Link to="/" className="block text-center text-sm text-mist underline">
           처음으로
         </Link>
       </form>
@@ -128,27 +129,27 @@ function QuizPicker({
           <Link to="/host/quizzes" className="rounded-lg bg-white/10 px-3 py-2 font-bold">
             ✏️ 퀴즈 관리
           </Link>
-          <button onClick={onLogout} className="text-violet-200 underline">
+          <button onClick={onLogout} className="text-mist underline">
             로그아웃
           </button>
         </div>
       </div>
       {error && <p className="mb-4 rounded-xl bg-red-500/20 p-3 text-red-200">{error}</p>}
-      {!quizzes && !error && <p className="text-violet-200">불러오는 중…</p>}
-      {quizzes?.length === 0 && <p className="text-violet-200">퀴즈 세트가 없어요. 위의 "퀴즈 관리"에서 먼저 만들어 주세요.</p>}
+      {!quizzes && !error && <p className="text-mist">불러오는 중…</p>}
+      {quizzes?.length === 0 && <p className="text-mist">퀴즈 세트가 없어요. 위의 "퀴즈 관리"에서 먼저 만들어 주세요.</p>}
       <ul className="space-y-3">
         {quizzes?.map((q) => (
           <li key={q.id} className="flex items-center justify-between gap-4 rounded-2xl bg-white/10 p-5">
             <div>
               <p className="text-xl font-bold">{q.title}</p>
-              <p className="text-sm text-violet-200">
+              <p className="text-sm text-mist">
                 {q.questionCount}문항 · {q.createdAt.slice(0, 10)}
               </p>
             </div>
             <button
               onClick={() => create(q.id)}
               disabled={creating !== null || q.questionCount === 0}
-              className="shrink-0 rounded-xl bg-amber-400 px-5 py-3 font-bold text-violet-950 disabled:opacity-50"
+              className="shrink-0 rounded-xl bg-gold-400 px-5 py-3 font-bold text-navy-950 disabled:opacity-50"
             >
               {creating === q.id ? "방 만드는 중…" : "방 만들기"}
             </button>
@@ -190,7 +191,7 @@ function HostRoomView({ room, onExit }: { room: HostRoom; onExit: () => void }) 
 
       {state.status === "lobby" && (
         <section className="grid flex-1 gap-8 p-8 lg:grid-cols-[auto_1fr]">
-          <div className="flex flex-col items-center gap-4 rounded-3xl bg-white p-8 text-violet-950">
+          <div className="flex flex-col items-center gap-4 rounded-3xl bg-white p-8 text-navy-950">
             <p className="text-lg">스마트폰으로 QR 을 찍거나</p>
             <QRCodeSVG value={joinUrl(room.pin)} size={280} marginSize={1} />
             <p className="text-lg">
@@ -204,19 +205,19 @@ function HostRoomView({ room, onExit }: { room: HostRoom; onExit: () => void }) 
               <button
                 onClick={() => r.send({ type: "host:start" })}
                 disabled={players.length === 0}
-                className="rounded-2xl bg-amber-400 px-8 py-4 text-2xl font-black text-violet-950 disabled:opacity-40"
+                className="rounded-2xl bg-gold-400 px-8 py-4 text-2xl font-black text-navy-950 disabled:opacity-40"
               >
                 시작 ▶
               </button>
             </div>
-            <ul className="flex flex-wrap content-start gap-3">
+            <ul className="flex flex-wrap content-start justify-center gap-x-3 gap-y-5 lg:justify-start">
               {players.map(([id, p]) => (
-                <li key={id} className="group flex items-center gap-2 rounded-full bg-white/10 py-1 pr-4 pl-1">
-                  <CharacterAvatar character={p.character} size={40} />
-                  <span className="text-xl font-bold">{p.nickname}</span>
+                <li key={id} className="group relative flex w-24 flex-col items-center">
+                  <CharacterAvatar character={p.character} size={72} seed={id} popIn mood={p.connected ? "idle" : "sleepy"} />
+                  <span className="glass mt-1 max-w-full truncate rounded-full px-3 py-0.5 text-base font-bold">{p.nickname}</span>
                   <button
                     onClick={() => r.send({ type: "host:kick", playerId: id })}
-                    className="ml-1 hidden text-sm text-red-300 group-hover:inline"
+                    className="absolute -top-1 right-1 hidden size-6 place-items-center rounded-full bg-red-500/80 text-xs group-hover:grid"
                     aria-label={`${p.nickname} 내보내기`}
                   >
                     ✕
@@ -224,7 +225,7 @@ function HostRoomView({ room, onExit }: { room: HostRoom; onExit: () => void }) 
                 </li>
               ))}
             </ul>
-            {players.length === 0 && <p className="text-xl text-violet-200">참가자를 기다리는 중…</p>}
+            {players.length === 0 && <p className="text-xl text-mist">참가자를 기다리는 중…</p>}
           </div>
         </section>
       )}
@@ -264,7 +265,7 @@ function HostRoomView({ room, onExit }: { room: HostRoom; onExit: () => void }) 
             <h2 className="text-3xl font-bold">순위</h2>
             <button
               onClick={() => r.send({ type: "host:next" })}
-              className="rounded-2xl bg-amber-400 px-8 py-4 text-2xl font-black text-violet-950"
+              className="rounded-2xl bg-gold-400 px-8 py-4 text-2xl font-black text-navy-950"
             >
               {state.currentQuestionIndex + 1 < state.totalQuestions ? "다음 문제 ▶" : "최종 결과 ▶"}
             </button>
@@ -275,8 +276,9 @@ function HostRoomView({ room, onExit }: { room: HostRoom; onExit: () => void }) 
 
       {state.status === "finished" && (
         <section className="mx-auto w-full max-w-3xl flex-1 space-y-6 p-8 text-center">
-          <h2 className="text-5xl font-black">🏆 최종 순위</h2>
-          <Leaderboard entries={ranking.slice(0, 10)} />
+          <h2 className="font-serif-kr text-5xl font-extrabold">🏆 최종 순위</h2>
+          <Podium top={ranking.slice(0, 3)} />
+          {ranking.length > 3 && <Leaderboard entries={ranking.slice(3, 10)} />}
           <button onClick={onExit} className="rounded-2xl bg-white/10 px-6 py-3 text-lg">
             다른 퀴즈 진행하기
           </button>
@@ -300,9 +302,9 @@ function HostQuestion({
   const left = useCountdown(q.endsAt);
   return (
     <section className="flex flex-1 flex-col gap-6 p-8">
-      <h2 className="rounded-3xl bg-white p-8 text-center text-4xl font-bold text-violet-950 sm:text-5xl">{q.question.text}</h2>
+      <h2 className="rounded-3xl bg-white p-8 text-center text-4xl font-bold text-navy-950 sm:text-5xl">{q.question.text}</h2>
       <div className="flex items-center justify-between text-3xl font-bold">
-        <span className="grid size-24 place-items-center rounded-full bg-violet-600 text-5xl">{left}</span>
+        <span className="grid size-24 place-items-center rounded-full bg-navy-600 text-5xl">{left}</span>
         <span>
           응답 {answered} / {total}
         </span>

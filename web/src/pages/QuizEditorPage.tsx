@@ -216,45 +216,45 @@ function Editor({ password }: { password: string }) {
       <aside className="space-y-3">
         <div className="flex items-center justify-between">
           <h1 className="text-2xl font-bold">퀴즈 관리</h1>
-          <Link to="/host" onClick={(e) => !confirmDiscard() && e.preventDefault()} className="text-sm text-violet-200 underline">
+          <Link to="/host" onClick={(e) => !confirmDiscard() && e.preventDefault()} className="text-sm text-mist underline">
             ← 진행 화면
           </Link>
         </div>
-        <button onClick={startNew} className="w-full rounded-xl bg-amber-400 py-3 font-bold text-violet-950">
+        <button onClick={startNew} className="w-full rounded-xl bg-gold-400 py-3 font-bold text-navy-950">
           ＋ 새 퀴즈 만들기
         </button>
-        {!quizzes && <p className="text-violet-200">불러오는 중…</p>}
+        {!quizzes && <p className="text-mist">불러오는 중…</p>}
         <ul className="space-y-2">
           {quizzes?.map((q) => (
             <li key={q.id}>
               <button
                 onClick={() => open(q.id)}
-                className={`w-full rounded-xl p-3 text-left ${draft?.id === q.id ? "bg-white/25 ring-2 ring-amber-400" : "bg-white/10 hover:bg-white/15"}`}
+                className={`w-full rounded-xl p-3 text-left ${draft?.id === q.id ? "bg-white/25 ring-2 ring-gold-400" : "bg-white/10 hover:bg-white/15"}`}
               >
                 <span className="block truncate font-bold">{q.title}</span>
-                <span className="text-sm text-violet-200">{q.questionCount}문항</span>
+                <span className="text-sm text-mist">{q.questionCount}문항</span>
               </button>
             </li>
           ))}
         </ul>
-        {quizzes?.length === 0 && <p className="text-sm text-violet-200">아직 퀴즈가 없어요. 새로 만들어 보세요.</p>}
+        {quizzes?.length === 0 && <p className="text-sm text-mist">아직 퀴즈가 없어요. 새로 만들어 보세요.</p>}
       </aside>
 
       <section className="min-w-0">
         {!draft ? (
-          <div className="grid h-64 place-items-center rounded-3xl bg-white/5 text-violet-200">
+          <div className="grid h-64 place-items-center rounded-3xl bg-white/5 text-mist">
             왼쪽에서 퀴즈를 고르거나 새로 만들어 주세요
           </div>
         ) : (
           <div className="space-y-4">
-            <div className="sticky top-0 z-10 -mx-2 flex flex-wrap items-center gap-3 rounded-2xl bg-violet-950/95 px-2 py-3 backdrop-blur">
+            <div className="sticky top-0 z-10 -mx-2 flex flex-wrap items-center gap-3 rounded-2xl bg-navy-950/95 px-2 py-3 backdrop-blur">
               <input
                 value={draft.title}
                 onChange={(e) => edit((d) => ({ ...d, title: e.target.value }))}
                 maxLength={QUIZ_LIMITS.titleMax}
                 placeholder="퀴즈 제목"
                 aria-label="퀴즈 제목"
-                className="min-w-0 flex-1 rounded-xl bg-white px-4 py-3 text-xl font-bold text-violet-950 outline-none"
+                className="min-w-0 flex-1 rounded-xl bg-white px-4 py-3 text-xl font-bold text-navy-950 outline-none"
               />
               {draft.id !== null && (
                 <button onClick={remove} disabled={busy} className="rounded-xl bg-red-500/20 px-4 py-3 text-red-200 disabled:opacity-50">
@@ -264,7 +264,7 @@ function Editor({ password }: { password: string }) {
               <button
                 onClick={save}
                 disabled={busy || (!dirty && draft.id !== null)}
-                className="rounded-xl bg-amber-400 px-6 py-3 font-bold text-violet-950 disabled:opacity-40"
+                className="rounded-xl bg-gold-400 px-6 py-3 font-bold text-navy-950 disabled:opacity-40"
               >
                 {busy ? "저장 중…" : dirty || draft.id === null ? "저장" : "저장됨"}
               </button>
@@ -294,7 +294,7 @@ function Editor({ password }: { password: string }) {
                     rows={10}
                     placeholder={"1. 무지개는 하나님의 언약의 증거이다.\n정답: O\n\n2. 하나님이 무지개를 주신 목적은?\n① 가\n② 나\n③ 다\n④ 라\n정답: 3"}
                     aria-label="붙여넣을 퀴즈 글"
-                    className="w-full rounded-xl bg-white px-4 py-3 font-mono text-sm text-violet-950 outline-none"
+                    className="w-full rounded-xl bg-white px-4 py-3 font-mono text-sm text-navy-950 outline-none"
                   />
                   {importText.trim() && (
                     <div className="text-sm" role="status">
@@ -303,7 +303,7 @@ function Editor({ password }: { password: string }) {
                         {parsed.questions.filter((q) => q.type === "choice").length})
                       </p>
                       {parsed.warnings.length > 0 && (
-                        <ul className="mt-1 list-disc space-y-0.5 pl-5 text-amber-200">
+                        <ul className="mt-1 list-disc space-y-0.5 pl-5 text-gold-200">
                           {parsed.warnings.map((w, k) => (
                             <li key={k}>{w}</li>
                           ))}
@@ -312,14 +312,14 @@ function Editor({ password }: { password: string }) {
                     </div>
                   )}
                   <div className="flex items-center justify-between gap-3">
-                    <p className="text-xs text-violet-200">
+                    <p className="text-xs text-mist">
                       O/X 는 <code>정답: O</code>, 4지선다는 <code>① ② ③ ④</code> 또는 <code>A. B. C. D.</code> 보기 + <code>정답: 3</code> 형식을 읽어요.
                     </p>
                     <button
                       type="button"
                       onClick={importQuestions}
                       disabled={parsed.questions.length === 0}
-                      className="shrink-0 rounded-xl bg-amber-400 px-5 py-2 font-bold text-violet-950 disabled:opacity-40"
+                      className="shrink-0 rounded-xl bg-gold-400 px-5 py-2 font-bold text-navy-950 disabled:opacity-40"
                     >
                       {parsed.questions.length}문제 가져오기
                     </button>
@@ -331,7 +331,7 @@ function Editor({ password }: { password: string }) {
             {draft.questions.map((q, i) => (
               <article key={q.key} className="space-y-3 rounded-2xl bg-white/10 p-4">
                 <div className="flex flex-wrap items-center gap-2">
-                  <span className="rounded-full bg-violet-600 px-3 py-1 text-sm font-bold">{i + 1}번</span>
+                  <span className="rounded-full bg-navy-600 px-3 py-1 text-sm font-bold">{i + 1}번</span>
                   <div className="flex overflow-hidden rounded-lg bg-white/10 text-sm" role="group" aria-label={`${i + 1}번 문제 유형`}>
                     {(["choice", "ox"] as const).map((t) => (
                       <button
@@ -339,7 +339,7 @@ function Editor({ password }: { password: string }) {
                         type="button"
                         onClick={() => changeType(i, t)}
                         aria-pressed={q.type === t}
-                        className={`px-3 py-1 ${q.type === t ? "bg-white font-bold text-violet-950" : ""}`}
+                        className={`px-3 py-1 ${q.type === t ? "bg-white font-bold text-navy-950" : ""}`}
                       >
                         {t === "ox" ? "O/X" : "4지선다"}
                       </button>
@@ -353,7 +353,7 @@ function Editor({ password }: { password: string }) {
                       max={QUIZ_LIMITS.timeMax}
                       value={q.timeLimitSec}
                       onChange={(e) => editQuestion(i, { timeLimitSec: Math.round(Number(e.target.value)) })}
-                      className="w-20 rounded-lg bg-white px-2 py-1 text-center text-violet-950 outline-none"
+                      className="w-20 rounded-lg bg-white px-2 py-1 text-center text-navy-950 outline-none"
                     />
                     초
                   </label>
@@ -372,7 +372,7 @@ function Editor({ password }: { password: string }) {
                   rows={2}
                   placeholder="문제 내용"
                   aria-label={`${i + 1}번 문제 내용`}
-                  className="w-full resize-none rounded-xl bg-white px-4 py-3 text-lg text-violet-950 outline-none"
+                  className="w-full resize-none rounded-xl bg-white px-4 py-3 text-lg text-navy-950 outline-none"
                 />
 
                 {q.type === "ox" ? (
@@ -410,7 +410,7 @@ function Editor({ password }: { password: string }) {
                         maxLength={QUIZ_LIMITS.choiceMax}
                         placeholder={`${c + 1}번 보기 (${s.label})`}
                         aria-label={`${i + 1}번 문제 ${c + 1}번 보기`}
-                        className="min-w-0 flex-1 rounded-lg bg-white/95 px-3 py-2 text-violet-950 outline-none"
+                        className="min-w-0 flex-1 rounded-lg bg-white/95 px-3 py-2 text-navy-950 outline-none"
                       />
                       <label className="flex items-center gap-1 text-sm font-bold text-white">
                         <input
@@ -439,7 +439,7 @@ function Editor({ password }: { password: string }) {
                   ＋ 4지선다 문제
                 </button>
               </div>
-              <span className="text-sm text-violet-200">
+              <span className="text-sm text-mist">
                 {draft.questions.length} / {QUIZ_LIMITS.questionsMax}문제
               </span>
             </div>

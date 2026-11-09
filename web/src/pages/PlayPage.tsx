@@ -72,13 +72,13 @@ function PinEntry({ initialPin, onValid }: { initialPin: string; onValid: (pin: 
           }}
           placeholder="PIN 6자리"
           autoFocus
-          className="w-full rounded-2xl bg-white px-4 py-4 text-center font-mono text-3xl tracking-[0.3em] text-violet-950 outline-none"
+          className="w-full rounded-2xl bg-white px-4 py-4 text-center font-mono text-3xl tracking-[0.3em] text-navy-950 outline-none"
         />
         {error && <p className="text-red-300">{error}</p>}
-        <button disabled={busy} className="w-full rounded-2xl bg-amber-400 py-4 text-xl font-bold text-violet-950 disabled:opacity-50">
+        <button disabled={busy} className="w-full rounded-2xl bg-gold-400 py-4 text-xl font-bold text-navy-950 disabled:opacity-50">
           {busy ? "확인 중…" : "입장하기"}
         </button>
-        <Link to="/" className="block text-sm text-violet-200 underline">
+        <Link to="/" className="block text-sm text-mist underline">
           처음으로
         </Link>
       </form>
@@ -104,21 +104,21 @@ function ProfileForm({ pin, onSubmit, onBack }: { pin: string; onSubmit: (p: Pro
   return (
     <main className="mx-auto flex min-h-full max-w-md flex-col justify-center px-4 py-8">
       <form onSubmit={submit} className="space-y-6">
-        <p className="text-center text-violet-200">
+        <p className="text-center text-mist">
           PIN <b className="font-mono">{pin}</b>{" "}
           <button type="button" onClick={onBack} className="underline">
             변경
           </button>
         </p>
         <div className="flex justify-center">
-          <CharacterAvatar character={character} size={120} />
+          <CharacterAvatar key={`${character.shape}${character.color}`} character={character} size={150} popIn />
         </div>
         <input
           value={nickname}
           onChange={(e) => setNickname(e.target.value.slice(0, NICKNAME_MAX))}
           placeholder="닉네임"
           autoFocus
-          className="w-full rounded-2xl bg-white px-4 py-4 text-center text-2xl font-bold text-violet-950 outline-none"
+          className="w-full rounded-2xl bg-white px-4 py-4 text-center text-2xl font-bold text-navy-950 outline-none"
         />
 
         <fieldset>
@@ -131,7 +131,7 @@ function ProfileForm({ pin, onSubmit, onBack }: { pin: string; onSubmit: (p: Pro
                 onClick={() => setCharacter((c) => ({ ...c, shape }))}
                 aria-pressed={character.shape === shape}
                 className={`flex flex-col items-center rounded-xl p-2 ${
-                  character.shape === shape ? "bg-white/30 ring-2 ring-amber-400" : "bg-white/10"
+                  character.shape === shape ? "bg-white/30 ring-2 ring-gold-400" : "bg-white/10"
                 }`}
               >
                 <CharacterAvatar character={{ ...character, shape }} size={44} />
@@ -160,7 +160,7 @@ function ProfileForm({ pin, onSubmit, onBack }: { pin: string; onSubmit: (p: Pro
 
         <button
           disabled={!nickname.trim()}
-          className="w-full rounded-2xl bg-amber-400 py-4 text-xl font-bold text-violet-950 disabled:opacity-50"
+          className="w-full rounded-2xl bg-gold-400 py-4 text-xl font-bold text-navy-950 disabled:opacity-50"
         >
           참가하기
         </button>
@@ -191,7 +191,7 @@ function PlayerGame({ pin, profile, onEditProfile }: { pin: string; profile: Pro
   if (r.error && !me) {
     return (
       <Center title={r.error}>
-        <button onClick={onEditProfile} className="mt-6 rounded-2xl bg-amber-400 px-6 py-3 font-bold text-violet-950">
+        <button onClick={onEditProfile} className="mt-6 rounded-2xl bg-gold-400 px-6 py-3 font-bold text-navy-950">
           다시 입력하기
         </button>
       </Center>
@@ -212,7 +212,11 @@ function PlayerGame({ pin, profile, onEditProfile }: { pin: string; profile: Pro
       </header>
 
       {state.status === "lobby" && (
-        <Center title="입장 완료!" subtitle="스크린에서 내 이름을 확인하세요. 곧 시작해요" />
+        <Center
+          title="입장 완료!"
+          subtitle="스크린에서 내 이름을 확인하세요. 곧 시작해요"
+          avatar={<CharacterAvatar character={me.character} size={150} seed={playerId} popIn />}
+        />
       )}
 
       {state.status === "playing" &&
@@ -222,7 +226,11 @@ function PlayerGame({ pin, profile, onEditProfile }: { pin: string; profile: Pro
             onAnswer={(choice) => r.send({ type: "answer", questionIndex: r.playerQuestion!.index, choice })}
           />
         ) : r.myAnswer ? (
-          <Center title="제출 완료!" subtitle="다른 친구들을 기다리는 중…" />
+          <Center
+            title="제출 완료!"
+            subtitle="다른 친구들을 기다리는 중…"
+            avatar={<CharacterAvatar character={me.character} size={130} mood="sleepy" seed={playerId} />}
+          />
         ) : (
           <Center title="문제를 기다리는 중…" />
         ))}
@@ -231,9 +239,16 @@ function PlayerGame({ pin, profile, onEditProfile }: { pin: string; profile: Pro
         (r.myResult ? (
           <section
             className={`flex flex-1 flex-col items-center justify-center gap-3 text-center ${
-              r.myResult.correct ? "bg-green-600" : "bg-red-600"
+              r.myResult.correct ? "bg-green-600/75" : "bg-red-600/75"
             }`}
           >
+            <CharacterAvatar
+              character={me.character}
+              size={170}
+              mood={r.myResult.correct ? "cheer" : r.myResult.answered ? "sad" : "sleepy"}
+              seed={playerId}
+              popIn
+            />
             <p className="text-5xl font-black">
               {r.myResult.correct ? "정답! 🎉" : r.myResult.answered ? "아쉬워요 😢" : "시간 초과 ⏰"}
             </p>
@@ -248,7 +263,11 @@ function PlayerGame({ pin, profile, onEditProfile }: { pin: string; profile: Pro
         ))}
 
       {state.status === "finished" && (
-        <Center title="게임 끝!" subtitle={myRank ? `최종 ${myRank.rank}등 · ${myRank.score.toLocaleString()}점` : undefined} />
+        <Center
+          title="게임 끝!"
+          subtitle={myRank ? `최종 ${myRank.rank}등 · ${myRank.score.toLocaleString()}점` : undefined}
+          avatar={<CharacterAvatar character={me.character} size={150} mood={myRank && myRank.rank <= 3 ? "cheer" : "idle"} seed={playerId} popIn />}
+        />
       )}
     </main>
   );
@@ -286,11 +305,12 @@ function Remote({
   );
 }
 
-function Center({ title, subtitle, children }: { title: string; subtitle?: string; children?: ReactNode }) {
+function Center({ title, subtitle, avatar, children }: { title: string; subtitle?: string; avatar?: ReactNode; children?: ReactNode }) {
   return (
-    <section className="flex flex-1 flex-col items-center justify-center p-6 text-center">
+    <section className="flex flex-1 flex-col items-center justify-center gap-1 p-6 text-center">
+      {avatar}
       <p className="text-3xl font-black">{title}</p>
-      {subtitle && <p className="mt-2 text-lg text-violet-200">{subtitle}</p>}
+      {subtitle && <p className="mt-2 text-lg text-mist">{subtitle}</p>}
       {children}
     </section>
   );
