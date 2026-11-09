@@ -1,7 +1,8 @@
-import type { AnswerIndex, Question, QuizSummary, RankEntry } from "@tob/shared";
+import type { AnswerIndex, Question, QuestionInput, QuizDetail, QuizInput, QuizSummary, RankEntry } from "@tob/shared";
 
 interface QuestionRow {
   id: number;
+  question_type: "choice" | "ox";
   question_text: string;
   choice1: string;
   choice2: string;
@@ -34,6 +35,7 @@ export async function loadQuestions(db: D1Database, quizId: number): Promise<Que
     .all<QuestionRow>();
   return results.map((r) => ({
     id: r.id,
+    type: r.question_type === "ox" ? "ox" : "choice",
     text: r.question_text,
     choices: [r.choice1, r.choice2, r.choice3, r.choice4],
     answerIndex: (r.correct_choice - 1) as AnswerIndex,
@@ -53,4 +55,51 @@ export async function saveGameResult(
   if (!session || opts.ranking.length === 0) return;
   const insert = db.prepare("INSERT INTO GameResults (session_id, nickname, score, rank) VALUES (?, ?, ?, ?)");
   await db.batch(opts.ranking.map((r) => insert.bind(session.id, r.nickname, r.score, r.rank)));
+}
+
+export async function getQuiz(db: D1Database, quizId: number): Promise<QuizDetail | null> {
+  const quiz = await db
+    .prepare("SELECT id, title, created_at AS createdAt FROM Quizzes WHERE id = ?")
+    .bind(quizId)
+    .first<Omit<QuizDetail, "questions">>();
+  if (!quiz) return null;
+  return { ...quiz, questions: await loadQuestions(db, quizId) };
+}
+
+function insertQuestion(db: D1Database, quizId: number, position: number, q: QuestionInput) {
+  return db
+    .prepare(
+      `INSERT INTO Questions (quiz_id, position, question_type, question_text, choice1, choice2, choice3, choice4, correct_choice, time_limit_sec)
+       VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
+    )
+    .bind(quizId, position, q.type, q.text, ...q.choices, q.answerIndex + 1, q.timeLimitSec);
+}
+
+export async function createQuiz(db: D1Database, input: QuizInput): Promise<number> {
+  const row = await db.prepare("INSERT INTO Quizzes (title) VALUES (?) RETURNING id").bind(input.title).first<{ id: number }>();
+  if (!row) throw new Error("퀴즈 생성 실패");
+  try {
+    await db.batch(input.questions.map((q, i) => insertQuestion(db, row.id, i + 1, q)));
+  } catch (err) {
+    await db.prepare("DELETE FROM Quizzes WHERE id = ?").bind(row.id).run(); // 문항 저장 실패 시 빈 퀴즈가 남지 않게
+    throw err;
+  }
+  return row.id;
+}
+
+/** 제목과 문항 전체를 한 번에 교체 (D1 batch = 트랜잭션). 없는 퀴즈면 false */
+export async function replaceQuiz(db: D1Database, quizId: number, input: QuizInput): Promise<boolean> {
+  if (!(await quizExists(db, quizId))) return false;
+  await db.batch([
+    db.prepare("UPDATE Quizzes SET title = ? WHERE id = ?").bind(input.title, quizId),
+    db.prepare("DELETE FROM Questions WHERE quiz_id = ?").bind(quizId),
+    ...input.questions.map((q, i) => insertQuestion(db, quizId, i + 1, q)),
+  ]);
+  return true;
+}
+
+/** 퀴즈 삭제. 문항과 이 퀴즈로 진행한 게임 통계도 함께 지워진다(ON DELETE CASCADE) */
+export async function deleteQuiz(db: D1Database, quizId: number): Promise<boolean> {
+  const res = await db.prepare("DELETE FROM Quizzes WHERE id = ?").bind(quizId).run();
+  return (res.meta.changes ?? 0) > 0;
 }

@@ -2,12 +2,14 @@ import { Link, Route, Routes } from "react-router-dom";
 import HomePage from "./pages/HomePage.tsx";
 import HostPage from "./pages/HostPage.tsx";
 import PlayPage from "./pages/PlayPage.tsx";
+import QuizEditorPage from "./pages/QuizEditorPage.tsx";
 
 export default function App() {
   return (
     <Routes>
       <Route path="/" element={<HomePage />} />
       <Route path="/host" element={<HostPage />} />
+      <Route path="/host/quizzes" element={<QuizEditorPage />} />
       <Route path="/play" element={<PlayPage />} />
       <Route
         path="*"

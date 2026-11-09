@@ -10,7 +10,7 @@
   },
   "scripts": {
     "typecheck": "tsc -p .",
-    "test": "node --experimental-strip-types --test src/scoring.test.ts"
+    "test": "node --experimental-strip-types --test src/*.test.ts"
   },
   "devDependencies": {
     "@types/node": "^22.0.0",

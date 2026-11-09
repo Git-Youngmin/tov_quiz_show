@@ -10,11 +10,12 @@ CREATE TABLE IF NOT EXISTS Quizzes (
   created_at  TEXT    NOT NULL DEFAULT (datetime('now'))
 );
 
--- 문항 (보기 4개, 정답 번호는 1~4)
+-- 문항: choice = 4지선다(정답 1~4), ox = O/X (choice1='O', choice2='X', 정답 1 또는 2, choice3·4 는 빈 문자열)
 CREATE TABLE IF NOT EXISTS Questions (
   id              INTEGER PRIMARY KEY AUTOINCREMENT,
   quiz_id         INTEGER NOT NULL REFERENCES Quizzes(id) ON DELETE CASCADE,
   position        INTEGER NOT NULL DEFAULT 0,          -- 세트 안에서의 출제 순서
+  question_type   TEXT    NOT NULL DEFAULT 'choice' CHECK (question_type IN ('choice', 'ox')),
   question_text   TEXT    NOT NULL,
   choice1         TEXT    NOT NULL,
   choice2         TEXT    NOT NULL,

@@ -56,12 +56,17 @@ export interface RoomState {
   players: Record<string, PlayerState>;
 }
 
+/** choice = 4지선다(빨강/파랑/노랑/초록), ox = O/X 2지선다 */
+export type QuestionType = "choice" | "ox";
+export const choiceCountOf = (t: QuestionType): 2 | 4 => (t === "ox" ? 2 : 4);
+
 /** D1 Questions 행을 클라이언트용으로 정리한 형태 */
 export interface Question {
   id: number;
+  type: QuestionType;
   text: string;
   choices: [string, string, string, string];
-  /** 0-based 정답 인덱스 (DB 에는 1~4 로 저장) */
+  /** ox 문제는 ["O","X","",""] 로 저장. 0-based 정답 인덱스 (DB 에는 1~4 로 저장) */
   answerIndex: AnswerIndex;
   timeLimitSec: number;
 }
@@ -124,7 +129,7 @@ export type ServerMessage =
   /** 진행자에게만: 문제 전체 (텍스트·보기 포함) */
   | { type: "question:host"; index: number; question: Omit<Question, "answerIndex">; endsAt: number }
   /** 참가자에게: 텍스트 없이 버튼 리모컨용 정보만 */
-  | { type: "question:player"; index: number; choiceCount: 4; timeLimitSec: number; endsAt: number }
+  | { type: "question:player"; index: number; choiceCount: 2 | 4; timeLimitSec: number; endsAt: number }
   /** 진행자에게: 응답 수 갱신 */
   | { type: "answer:count"; answered: number; total: number }
   /** 참가자 본인에게: 제출 접수 */
@@ -152,3 +157,25 @@ export type ServerMessage =
       totalPlayers: number;
     }
   | { type: "kicked" };
+
+// ───────────────────────── 퀴즈 편집 ─────────────────────────
+
+/** 편집 화면에서 저장하는 문항 (answerIndex 는 0-based) */
+export interface QuestionInput {
+  type: QuestionType;
+  text: string;
+  choices: [string, string, string, string];
+  answerIndex: AnswerIndex;
+  timeLimitSec: number;
+}
+export interface QuizInput {
+  title: string;
+  questions: QuestionInput[];
+}
+/** GET /api/quizzes/:id — 정답 포함 (관리자 전용) */
+export interface QuizDetail {
+  id: number;
+  title: string;
+  createdAt: string;
+  questions: Question[];
+}

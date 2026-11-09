@@ -9,26 +9,34 @@ export const ANSWER_STYLES = [
   { bg: "bg-green-500", icon: "■", label: "초록" },
 ] as const;
 
+/** O/X 문제: 0 = O(파랑), 1 = X(빨강) */
+export const OX_STYLES = [
+  { bg: "bg-blue-500", icon: "O", label: "O" },
+  { bg: "bg-red-500", icon: "X", label: "X" },
+] as const;
+
 export function AnswerButton({
+  kind = "choice",
   index,
   onClick,
   disabled,
   dimmed,
   children,
 }: {
+  kind?: "choice" | "ox";
   index: AnswerIndex;
   onClick?: () => void;
   disabled?: boolean;
   dimmed?: boolean;
   children?: ReactNode;
 }) {
-  const s = ANSWER_STYLES[index];
+  const s = kind === "ox" ? OX_STYLES[index as 0 | 1] : ANSWER_STYLES[index];
   return (
     <button
       type="button"
       onClick={onClick}
       disabled={disabled}
-      aria-label={`${index + 1}번 ${s.label}`}
+      aria-label={kind === "ox" ? s.label : `${index + 1}번 ${s.label}`}
       className={`${s.bg} flex items-center gap-4 ${children ? "" : "justify-center"} rounded-2xl p-4 text-left font-bold text-white shadow-[0_6px_0_rgba(0,0,0,0.25)] transition active:translate-y-1 active:shadow-none disabled:cursor-default ${
         dimmed ? "opacity-30" : ""
       }`}

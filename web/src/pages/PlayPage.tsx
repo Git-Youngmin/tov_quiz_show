@@ -268,11 +268,20 @@ function Remote({
       <p className="text-center text-lg font-bold">
         {q.index + 1}번 문제 · {left}초
       </p>
-      <div className="grid flex-1 grid-cols-2 grid-rows-2 gap-3">
-        {([0, 1, 2, 3] as const).map((i) => (
-          <AnswerButton key={i} index={i} onClick={() => onAnswer(i)} />
-        ))}
-      </div>
+      {q.choiceCount === 2 ? (
+        // O/X 문제: 큼직한 버튼 2개
+        <div className="grid flex-1 grid-cols-2 gap-3">
+          {([0, 1] as const).map((i) => (
+            <AnswerButton key={i} kind="ox" index={i} onClick={() => onAnswer(i)} />
+          ))}
+        </div>
+      ) : (
+        <div className="grid flex-1 grid-cols-2 grid-rows-2 gap-3">
+          {([0, 1, 2, 3] as const).map((i) => (
+            <AnswerButton key={i} index={i} onClick={() => onAnswer(i)} />
+          ))}
+        </div>
+      )}
     </section>
   );
 }

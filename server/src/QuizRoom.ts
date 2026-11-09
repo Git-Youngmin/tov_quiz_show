@@ -8,6 +8,7 @@
 import { Server, type Connection, type ConnectionContext, type WSMessage } from "partyserver";
 import {
   MAX_PLAYERS,
+  choiceCountOf,
   NICKNAME_MAX,
   isCharacter,
   scoreAnswer,
@@ -160,6 +161,7 @@ export class QuizRoom extends Server<Env> {
     if (this.room.status !== "playing" || questionIndex !== this.room.currentQuestionIndex) return;
     if (!this.room.players[conn.id] || this.answers.has(conn.id)) return;
     if (choice !== 0 && choice !== 1 && choice !== 2 && choice !== 3) return;
+    if (choice >= choiceCountOf(this.questions[questionIndex].type)) return; // O/X 문제에 3·4번 버튼은 없음
 
     this.answers.set(conn.id, { choice, responseMs: Date.now() - this.questionStartedAt });
     this.send(conn, { type: "answer:ack", questionIndex, choice });
@@ -292,7 +294,7 @@ export class QuizRoom extends Server<Env> {
       this.send(conn, {
         type: "question:player",
         index,
-        choiceCount: 4,
+        choiceCount: choiceCountOf(q.type),
         timeLimitSec: q.timeLimitSec,
         endsAt: this.questionEndsAt,
       });

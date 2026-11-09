@@ -65,7 +65,10 @@ host.send({ type: "host:start" });
 const hq = await host.next((m) => m.type === "question:host");
 const pq = await a.next((m) => m.type === "question:player");
 assert(typeof hq.question.text === "string" && !("answerIndex" in hq.question), "진행자는 문제 텍스트 수신 (정답 숨김)");
-assert(!("question" in pq) && pq.choiceCount === 4, "참가자는 텍스트 없이 버튼 정보만 수신");
+assert(!("question" in pq) && pq.choiceCount === (hq.question.type === "ox" ? 2 : 4), `참가자는 텍스트 없이 버튼 정보만 수신 (${hq.question.type === "ox" ? "O/X 2버튼" : "4버튼"})`);
+if (hq.question.type === "ox") {
+  a.send({ type: "answer", questionIndex: 0, choice: 3 }); // O/X 문제에 없는 버튼 → 무시되어야 함 (아래 분포 검사로 확인)
+}
 
 for (let i = 0; i < quiz.questionCount; i++) {
   if (i > 0) {

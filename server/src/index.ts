@@ -4,8 +4,8 @@
  *  - /api/*                    → REST (관리자 인증, 퀴즈 목록, 방 생성, PIN 조회)
  */
 import { routePartykitRequest } from "partyserver";
-import { PIN_LENGTH, isPin, type CreateRoomRequest, type RoomRecord } from "@tob/shared";
-import { listQuizzes, quizExists } from "./db.ts";
+import { PIN_LENGTH, isPin, validateQuizInput, type CreateRoomRequest, type RoomRecord } from "@tob/shared";
+import { createQuiz, deleteQuiz, getQuiz, listQuizzes, quizExists, replaceQuiz } from "./db.ts";
 import type { Env } from "./env.ts";
 
 export { QuizRoom } from "./QuizRoom.ts";
@@ -52,9 +52,35 @@ async function handleApi(request: Request, env: Env): Promise<Response> {
     return isAdmin(request, env) ? json({ ok: true }) : json({ error: "비밀번호가 틀렸어요" }, 401);
   }
 
-  if (pathname === "/api/quizzes" && request.method === "GET") {
+  // 퀴즈 세트 관리 (관리자 전용)
+  if (pathname === "/api/quizzes" || pathname.startsWith("/api/quizzes/")) {
     if (!isAdmin(request, env)) return json({ error: "Unauthorized" }, 401);
-    return json(await listQuizzes(env.DB));
+
+    if (pathname === "/api/quizzes") {
+      if (request.method === "GET") return json(await listQuizzes(env.DB));
+      if (request.method === "POST") {
+        const parsed = validateQuizInput(await request.json().catch(() => null));
+        if (!parsed.ok) return json({ error: parsed.error }, 400);
+        return json({ id: await createQuiz(env.DB, parsed.value) }, 201);
+      }
+    }
+
+    const m = pathname.match(/^\/api\/quizzes\/(\d+)$/);
+    if (m) {
+      const id = Number(m[1]);
+      if (request.method === "GET") {
+        const quiz = await getQuiz(env.DB, id);
+        return quiz ? json(quiz) : json({ error: "퀴즈를 찾을 수 없어요" }, 404);
+      }
+      if (request.method === "PUT") {
+        const parsed = validateQuizInput(await request.json().catch(() => null));
+        if (!parsed.ok) return json({ error: parsed.error }, 400);
+        return (await replaceQuiz(env.DB, id, parsed.value)) ? json({ id }) : json({ error: "퀴즈를 찾을 수 없어요" }, 404);
+      }
+      if (request.method === "DELETE") {
+        return (await deleteQuiz(env.DB, id)) ? json({ ok: true }) : json({ error: "퀴즈를 찾을 수 없어요" }, 404);
+      }
+    }
   }
 
   // 방 만들기: PIN 발급 + KV 등록
@@ -114,7 +140,7 @@ function corsHeaders(request: Request, env: Env): Record<string, string> {
   const allow = allowed.includes("*") ? "*" : allowed.includes(origin) ? origin : allowed[0];
   return {
     "Access-Control-Allow-Origin": allow,
-    "Access-Control-Allow-Methods": "GET, POST, OPTIONS",
+    "Access-Control-Allow-Methods": "GET, POST, PUT, DELETE, OPTIONS",
     "Access-Control-Allow-Headers": "Content-Type, Authorization",
     "Access-Control-Max-Age": "86400",
     Vary: "Origin",

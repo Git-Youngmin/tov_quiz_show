@@ -1,7 +1,7 @@
 import { useEffect, useState, type FormEvent } from "react";
 import { Link } from "react-router-dom";
 import { QRCodeSVG } from "qrcode.react";
-import type { AnswerIndex, QuizSummary } from "@tob/shared";
+import { choiceCountOf, type AnswerIndex, type QuizSummary } from "@tob/shared";
 import { api } from "../lib/api.ts";
 import { joinUrl } from "../lib/config.ts";
 import { adminSession } from "../lib/storage.ts";
@@ -124,13 +124,18 @@ function QuizPicker({
     <main className="mx-auto max-w-2xl px-4 py-10">
       <div className="mb-6 flex items-center justify-between">
         <h1 className="text-3xl font-bold">퀴즈 세트 선택</h1>
-        <button onClick={onLogout} className="text-sm text-violet-200 underline">
-          로그아웃
-        </button>
+        <div className="flex items-center gap-4 text-sm">
+          <Link to="/host/quizzes" className="rounded-lg bg-white/10 px-3 py-2 font-bold">
+            ✏️ 퀴즈 관리
+          </Link>
+          <button onClick={onLogout} className="text-violet-200 underline">
+            로그아웃
+          </button>
+        </div>
       </div>
       {error && <p className="mb-4 rounded-xl bg-red-500/20 p-3 text-red-200">{error}</p>}
       {!quizzes && !error && <p className="text-violet-200">불러오는 중…</p>}
-      {quizzes?.length === 0 && <p className="text-violet-200">퀴즈 세트가 없어요. D1 에 문제를 먼저 넣어 주세요.</p>}
+      {quizzes?.length === 0 && <p className="text-violet-200">퀴즈 세트가 없어요. 위의 "퀴즈 관리"에서 먼저 만들어 주세요.</p>}
       <ul className="space-y-3">
         {quizzes?.map((q) => (
           <li key={q.id} className="flex items-center justify-between gap-4 rounded-2xl bg-white/10 p-5">
@@ -239,10 +244,17 @@ function HostRoomView({ room, onExit }: { room: HostRoom; onExit: () => void }) 
             <div>
               <h2 className="mb-4 text-3xl font-bold">{r.hostQuestion.question.text}</h2>
               <div className="grid grid-cols-2 gap-3">
-                {r.hostQuestion.question.choices.map((c, i) => (
-                  <AnswerButton key={i} index={i as AnswerIndex} disabled dimmed={i !== r.result!.answerIndex}>
+                {r.hostQuestion.question.choices.slice(0, choiceCountOf(r.hostQuestion.question.type)).map((c, i) => (
+                  <AnswerButton
+                    key={i}
+                    kind={r.hostQuestion!.question.type}
+                    index={i as AnswerIndex}
+                    disabled
+                    dimmed={i !== r.result!.answerIndex}
+                  >
                     {i === r.result!.answerIndex && "✓ "}
-                    {c} · {r.result!.distribution[i]}명
+                    {r.hostQuestion!.question.type === "ox" ? "" : `${c} · `}
+                    {r.result!.distribution[i]}명
                   </AnswerButton>
                 ))}
               </div>
@@ -299,9 +311,9 @@ function HostQuestion({
         </button>
       </div>
       <div className="grid flex-1 grid-cols-2 gap-4">
-        {q.question.choices.map((c, i) => (
-          <AnswerButton key={i} index={i as AnswerIndex} disabled>
-            {c}
+        {q.question.choices.slice(0, choiceCountOf(q.question.type)).map((c, i) => (
+          <AnswerButton key={i} kind={q.question.type} index={i as AnswerIndex} disabled>
+            {q.question.type === "ox" ? "" : c}
           </AnswerButton>
         ))}
       </div>
