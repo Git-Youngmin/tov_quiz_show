@@ -1,15 +1,17 @@
 /**
- * 토브 퀴즈쇼 전용 정통 클래식 심포니 BGM & SFX 엔진
+ * 토브 퀴즈쇼 전용 메이플스토리 스타일 스튜디오 BGM & SFX 사운드 엔진
  *
- * 🎻 수록곡 (저작권 만료 퍼블릭 도메인 / 오케스트라 실연 레코딩):
- *   - lobby(로비/홈): 비발디 사계 중 봄 1악장 알레그로 (Vivaldi - Spring 1. Allegro)
- *     * 밝고 우아하며 활기찬 스트링 솔로와 합주
- *   - playing(문제 풀이): 비발디 사계 중 여름 3악장 프레스토 (Vivaldi - Summer 3. Presto)
- *     * 긴박하고 폭풍처럼 휘몰아치는 바이올린 초절기교 속주 (퀴즈 긴장감 극대화)
- *   - leaderboard(순위 발표): 브람스 헝가리 무곡 5번 (Brahms - Hungarian Dance No. 5)
- *     * 리드미컬하고 세련되며 드라마틱한 관현악
- *   - finished(최종 결과/시상식): 오펜바흐 천국과 지옥 중 캉캉 (Offenbach - Can-Can / Galop Infernal)
- *     * 신나고 폭발적인 축제 분위기
+ * 🍁 수록곡 (Apple Logic Pro 멀티 샘플 악기 & 라이브 드러머 스튜디오 프로덕션):
+ *   - lobby(로비/홈): "Sunny Maple Plaza" (124 BPM, F Major)
+ *     * 헤네시스(Floral Life) & 리스항구(Above the Treetops) 감성의 산뜻한 콘서트 플루트,
+ *       스타인웨이 그랜드 피아노, 어쿠스틱 기타, 벨, 핑거스타일 베이스와 어쿠스틱 드럼 앙상블
+ *   - playing(문제 풀이): "Monster Carnival Rush!" (134 BPM, E Dorian / G Major)
+ *     * 커닝스퀘어 & 몬스터 카니발 감성의 펑키하고 세련된 신스 리드, 슬랩/핑거 베이스,
+ *       일렉트릭 기타 찹, 브라스 스탭이 어우러진 속도감 있는 퀴즈 테마
+ *   - leaderboard(순위 발표): "Starlight Party Quest" (120 BPM, A Major)
+ *     * 루디브리엄 & 파티퀘스트 클리어 감성의 로즈 일렉트릭 피아노, 벨, 클라리넷·플루트 재즈팝 그루브
+ *   - finished(최종 결과/시상식): "Maple Champions Parade!" (128 BPM, C Major)
+ *     * 메이플 아일랜드 & 피날레 퍼레이드 감성의 팡파레 브라스, 풀 스트링, 피아노, 벨 트리 축제 테마
  */
 
 export type BgmTrack = "lobby" | "playing" | "leaderboard" | "finished" | "off";
@@ -21,7 +23,7 @@ const TRACK_PATHS: Record<Exclude<BgmTrack, "off">, string> = {
   finished: "/audio/bgm_finished.mp3",
 };
 
-class RealClassicalAudioEngine {
+class MapleBgmAudioEngine {
   private currentTrack: BgmTrack = "off";
   private activeAudio: HTMLAudioElement | null = null;
   private fadingAudio: HTMLAudioElement | null = null;
@@ -31,7 +33,6 @@ class RealClassicalAudioEngine {
   private sfxCtx: AudioContext | null = null;
 
   constructor() {
-    // 이전 설정 복원
     try {
       const savedMute = localStorage.getItem("tov_bgm_muted");
       if (savedMute !== null) this.isMuted = savedMute === "true";
@@ -41,7 +42,6 @@ class RealClassicalAudioEngine {
       // ignore
     }
 
-    // 브라우저 자동 재생 정책 해제 리스너 등록
     if (typeof window !== "undefined") {
       const unlock = () => {
         if (this.sfxCtx && this.sfxCtx.state === "suspended") {
@@ -107,10 +107,8 @@ class RealClassicalAudioEngine {
     const src = TRACK_PATHS[track];
     if (!src) return;
 
-    // 이전 재생 중인 오디오 부드럽게 페이드아웃
     this.fadeOutPrevious();
 
-    // 새 오디오 생성 또는 재활용
     let nextAudio = this.audioCache.get(src);
     if (!nextAudio) {
       nextAudio = new Audio(src);
@@ -127,8 +125,8 @@ class RealClassicalAudioEngine {
 
     const playPromise = nextAudio.play();
     if (playPromise !== undefined) {
-      playPromise.catch((_err) => {
-        // 자동 재생 차단된 경우, 다음 사용자 클릭 시 재생 대기
+      playPromise.catch(() => {
+        // 자동 재생 차단 시 첫 클릭에서 자동 언락됨
       });
     }
   }
@@ -140,7 +138,7 @@ class RealClassicalAudioEngine {
 
     const startVol = prev.volume;
     const fadeSteps = 10;
-    const stepTime = 40; // 0.4초 페이드아웃
+    const stepTime = 40;
     let step = 0;
 
     const fadeTimer = setInterval(() => {
@@ -176,7 +174,7 @@ class RealClassicalAudioEngine {
     }
   }
 
-  /** 카운트다운 째깍 소리 (우드블록 스타일) */
+  /** 카운트다운 째깍 소리 (깔끔한 우드블록 틱) */
   public playTick() {
     if (this.isMuted) return;
     try {
@@ -188,78 +186,39 @@ class RealClassicalAudioEngine {
       const gain = this.sfxCtx.createGain();
 
       osc.type = "sine";
-      osc.frequency.setValueAtTime(1400, now);
-      osc.frequency.exponentialRampToValueAtTime(700, now + 0.04);
+      osc.frequency.setValueAtTime(1320, now);
+      osc.frequency.exponentialRampToValueAtTime(660, now + 0.035);
 
-      gain.gain.setValueAtTime(0.3 * this.volume, now);
-      gain.gain.exponentialRampToValueAtTime(0.001, now + 0.04);
+      gain.gain.setValueAtTime(0.28 * this.volume, now);
+      gain.gain.exponentialRampToValueAtTime(0.001, now + 0.035);
 
       osc.connect(gain);
       gain.connect(this.sfxCtx.destination);
 
       osc.start(now);
-      osc.stop(now + 0.045);
+      osc.stop(now + 0.04);
     } catch {}
   }
 
-  /** 정답 효과음 (맑고 화려한 벨 차임 & 상승 3화음) */
+  /** 정답 효과음 (메이플 퀘스트 완료 / 레벨업 스타일 스튜디오 차임) */
   public playCorrect() {
     if (this.isMuted) return;
     try {
-      this.initSfx();
-      if (!this.sfxCtx) return;
-
-      const now = this.sfxCtx.currentTime;
-      // C6, E6, G6, C7 빠른 아르페지오 차임
-      const notes = [1046.5, 1318.5, 1567.98, 2093.0];
-      notes.forEach((freq, i) => {
-        const t = now + i * 0.07;
-        const osc = this.sfxCtx!.createOscillator();
-        const gain = this.sfxCtx!.createGain();
-
-        osc.type = "triangle";
-        osc.frequency.setValueAtTime(freq, t);
-
-        gain.gain.setValueAtTime(0.35 * this.volume, t);
-        gain.gain.exponentialRampToValueAtTime(0.001, t + 0.35);
-
-        osc.connect(gain);
-        gain.connect(this.sfxCtx!.destination);
-
-        osc.start(t);
-        osc.stop(t + 0.36);
-      });
+      const sfx = new Audio("/audio/sfx_correct.mp3");
+      sfx.volume = Math.min(1, this.volume * 0.95);
+      sfx.play().catch(() => {});
     } catch {}
   }
 
-  /** 오답 효과음 (부드러운 단조 피치카토) */
+  /** 오답 효과음 (따뜻한 로즈 피아노 & 클라리넷 화음) */
   public playWrong() {
     if (this.isMuted) return;
     try {
-      this.initSfx();
-      if (!this.sfxCtx) return;
-
-      const now = this.sfxCtx.currentTime;
-      const notes = [392.0, 329.6]; // G4 -> E4 하강
-      notes.forEach((freq, i) => {
-        const t = now + i * 0.12;
-        const osc = this.sfxCtx!.createOscillator();
-        const gain = this.sfxCtx!.createGain();
-
-        osc.type = "sine";
-        osc.frequency.setValueAtTime(freq, t);
-
-        gain.gain.setValueAtTime(0.25 * this.volume, t);
-        gain.gain.exponentialRampToValueAtTime(0.001, t + 0.25);
-
-        osc.connect(gain);
-        gain.connect(this.sfxCtx!.destination);
-
-        osc.start(t);
-        osc.stop(t + 0.26);
-      });
+      const sfx = new Audio("/audio/sfx_wrong.mp3");
+      sfx.volume = Math.min(1, this.volume * 0.85);
+      sfx.play().catch(() => {});
     } catch {}
   }
 }
 
-export const sound = new RealClassicalAudioEngine();
+export const sound = new MapleBgmAudioEngine();

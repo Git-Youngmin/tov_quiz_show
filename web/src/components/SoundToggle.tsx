@@ -40,7 +40,7 @@ export function SoundToggle({ className = "" }: { className?: string }) {
         aria-label={muted ? "음악 켜기" : "음악 끄기"}
         title={muted ? "음악 켜기" : "음악 끄기"}
       >
-        <span className="text-base leading-none">{muted ? "🔇" : "🎻"}</span>
+        <span className="text-base leading-none">{muted ? "🔇" : "🎵"}</span>
         <span className="hidden sm:inline">{muted ? "BGM OFF" : "BGM ON"}</span>
       </button>
 
