@@ -1,8 +1,7 @@
-import { useCallback, useEffect, useMemo, useRef, useState } from "react";
+import { useCallback, useEffect, useRef, useState } from "react";
 import { Link } from "react-router-dom";
 import {
   QUIZ_LIMITS,
-  parseQuizText,
   validateQuizInput,
   type AnswerIndex,
   type QuestionType,
@@ -37,7 +36,6 @@ const blankQuestion = (type: QuestionType = "ox"): DraftQuestion => ({
   answerIndex: 0,
   timeLimitSec: QUIZ_LIMITS.timeDefault,
 });
-const isBlank = (q: DraftQuestion) => !q.text.trim() && q.choices.every((c) => !c.trim());
 const blankDraft = (): Draft => ({ id: null, title: "", questions: [blankQuestion()] });
 const toDraft = (q: QuizDetail): Draft => ({
   id: q.id,
@@ -69,9 +67,6 @@ function Editor() {
   const [loadError, setLoadError] = useState("");
   const [notice, setNotice] = useState<{ kind: "ok" | "error"; text: string } | null>(null);
   const bottomRef = useRef<HTMLDivElement>(null);
-  const [importOpen, setImportOpen] = useState(false);
-  const [importText, setImportText] = useState("");
-  const parsed = useMemo(() => parseQuizText(importText), [importText]);
 
   const fail = useCallback((err: Error) => setNotice({ kind: "error", text: err.message }), []);
 
@@ -193,20 +188,6 @@ function Editor() {
     editQuestion(i, { type, answerIndex: type === "ox" && q.answerIndex > 1 ? 0 : q.answerIndex });
   };
 
-  /** 붙여넣은 글에서 읽어 낸 문제를 현재 퀴즈 뒤에 붙인다 (빈 문제 하나뿐이면 대체) */
-  const importQuestions = () => {
-    if (!draft || parsed.questions.length === 0) return;
-    const room = QUIZ_LIMITS.questionsMax - draft.questions.filter((q) => !isBlank(q)).length;
-    if (parsed.questions.length > room) {
-      return setNotice({ kind: "error", text: `문제는 ${QUIZ_LIMITS.questionsMax}개까지라서 ${room}개만 더 넣을 수 있어요` });
-    }
-    const added: DraftQuestion[] = parsed.questions.map((q) => ({ key: ++keySeq, ...q }));
-    edit((d) => ({ ...d, questions: [...d.questions.filter((q) => !isBlank(q)), ...added] }));
-    setImportText("");
-    setImportOpen(false);
-    setNotice({ kind: "ok", text: `${added.length}문제를 가져왔어요. 내용을 확인하고 저장해 주세요` });
-  };
-
   return (
     <main className="mx-auto grid max-w-6xl gap-6 px-4 py-8 lg:grid-cols-[18rem_1fr]">
       <aside className="space-y-3">
@@ -279,58 +260,6 @@ function Editor() {
                 {notice.text}
               </p>
             )}
-
-            <div className="rounded-2xl bg-white/5 p-4">
-              <button
-                type="button"
-                onClick={() => setImportOpen((o) => !o)}
-                aria-expanded={importOpen}
-                className="flex w-full items-center justify-between font-bold"
-              >
-                <span>📋 단톡방에 올리던 글 붙여넣기</span>
-                <span aria-hidden>{importOpen ? "▲" : "▼"}</span>
-              </button>
-              {importOpen && (
-                <div className="mt-3 space-y-3">
-                  <textarea
-                    value={importText}
-                    onChange={(e) => setImportText(e.target.value)}
-                    rows={10}
-                    placeholder={"1. 무지개는 하나님의 언약의 증거이다.\n정답: O\n\n2. 하나님이 무지개를 주신 목적은?\n① 가\n② 나\n③ 다\n④ 라\n정답: 3"}
-                    aria-label="붙여넣을 퀴즈 글"
-                    className="w-full rounded-xl bg-white px-4 py-3 font-mono text-sm text-navy-950 outline-none"
-                  />
-                  {importText.trim() && (
-                    <div className="text-sm" role="status">
-                      <p className="font-bold">
-                        인식된 문제 {parsed.questions.length}개 (O/X {parsed.questions.filter((q) => q.type === "ox").length} · 4지선다{" "}
-                        {parsed.questions.filter((q) => q.type === "choice").length})
-                      </p>
-                      {parsed.warnings.length > 0 && (
-                        <ul className="mt-1 list-disc space-y-0.5 pl-5 text-gold-200">
-                          {parsed.warnings.map((w, k) => (
-                            <li key={k}>{w}</li>
-                          ))}
-                        </ul>
-                      )}
-                    </div>
-                  )}
-                  <div className="flex items-center justify-between gap-3">
-                    <p className="text-xs text-mist">
-                      O/X 는 <code>정답: O</code>, 4지선다는 <code>① ② ③ ④</code> 또는 <code>A. B. C. D.</code> 보기 + <code>정답: 3</code> 형식을 읽어요.
-                    </p>
-                    <button
-                      type="button"
-                      onClick={importQuestions}
-                      disabled={parsed.questions.length === 0}
-                      className="shrink-0 rounded-xl bg-gold-400 px-5 py-2 font-bold text-navy-950 disabled:opacity-40"
-                    >
-                      {parsed.questions.length}문제 가져오기
-                    </button>
-                  </div>
-                </div>
-              )}
-            </div>
 
             {draft.questions.map((q, i) => (
               <article key={q.key} className="space-y-3 rounded-2xl bg-white/10 p-4">
