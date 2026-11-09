@@ -16,6 +16,7 @@ import { useCountUp } from "../lib/useCountUp.ts";
 import { useRoom, type RoomView } from "../lib/useRoom.ts";
 import { AnswerButton } from "../components/AnswerButton.tsx";
 import { COLOR_HEX, COLOR_LABEL, CharacterAvatar, SHAPE_NICK, type Mood } from "../components/CharacterAvatar.tsx";
+import { FuseTimer } from "../components/FuseTimer.tsx";
 import { QuestionIntro, TYPE_LABEL } from "../components/QuestionIntro.tsx";
 import { SoundToggle } from "../components/SoundToggle.tsx";
 import { sound } from "../audio/ClassicalBgmEngine.ts";
@@ -323,10 +324,9 @@ function Remote({
           {q.index + 1} / {total}
         </span>
         <span className="rounded-full bg-white/10 px-3 py-1 text-sm font-bold">{TYPE_LABEL[q.questionType]}</span>
-        <span className={`text-xl font-black tabular-nums ${urgent ? "text-red-300" : ""}`}>{left}초</span>
       </div>
-      <div className="h-3 overflow-hidden rounded-full bg-white/10">
-        <div className={`time-bar h-full rounded-full ${urgent ? "bg-red-400" : "bg-gold-400"}`} style={{ width: `${pct}%` }} />
+      <div className="px-1">
+        <FuseTimer pct={pct} left={left} urgent={urgent} />
       </div>
 
       {q.choiceCount === 2 ? (

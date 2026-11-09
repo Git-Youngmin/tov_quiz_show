@@ -5,6 +5,7 @@ import { useServerNow } from "../lib/useCountdown.ts";
 import type { RoomView } from "../lib/useRoom.ts";
 import { AnimatedScoreboard } from "./AnimatedScoreboard.tsx";
 import { AnswerButton, ANSWER_STYLES, OX_STYLES } from "./AnswerButton.tsx";
+import { FuseTimer } from "./FuseTimer.tsx";
 import { QuestionIntro, TYPE_LABEL } from "./QuestionIntro.tsx";
 
 type HostQuestionMsg = NonNullable<RoomView["hostQuestion"]>;
@@ -67,11 +68,8 @@ export function HostQuestion({
       )}
 
       <div className="flex items-center gap-4">
-        <span className={`grid size-20 shrink-0 place-items-center rounded-full text-5xl font-black ${urgent ? "bg-red-500" : "bg-navy-600"} transition-colors`}>
-          {left}
-        </span>
-        <div className="h-5 flex-1 overflow-hidden rounded-full bg-white/10">
-          <div className={`time-bar h-full rounded-full ${urgent ? "bg-red-400" : "bg-gold-400"}`} style={{ width: `${pct}%` }} />
+        <div className="min-w-0 flex-1">
+          <FuseTimer pct={pct} left={left} urgent={urgent} large />
         </div>
         <button onClick={onSkip} disabled={!started} className="rounded-xl bg-white/10 px-4 py-2 text-lg disabled:opacity-40">
           마감하기

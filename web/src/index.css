@@ -734,9 +734,142 @@ body {
   }
 }
 
-/* 줄어드는 제한 시간 막 */
-.time-bar {
+/* ───────────── 제한 시간: 도화선(밧줄)이 타들어 가는 모습 ─────────────
+   한쪽 끝의 동그라미(초 숫자) 쪽으로 밧줄이 줄어들고, 타는 끝에서 불꽃과 불똥이 튄다. */
+.fuse__track {
+  position: relative;
+  flex: 1;
+  height: 1.15rem;
+  border-radius: 999px;
+  /* 이미 타 버린 자리: 그을린 재 자국 */
+  background:
+    repeating-linear-gradient(90deg, rgb(255 140 60 / 0.16) 0 2px, transparent 2px 14px),
+    rgb(0 0 0 / 0.32);
+  box-shadow: inset 0 2px 4px rgb(0 0 0 / 0.4);
+}
+.fuse__rope {
+  position: relative;
+  height: 100%;
+  min-width: 0;
+  border-radius: 999px;
+  /* 꼬아 놓은 밧줄 결 */
+  background: repeating-linear-gradient(115deg, #e0bf84 0 6px, #a98349 6px 12px);
+  box-shadow:
+    inset 0 2px 0 rgb(255 255 255 / 0.3),
+    inset 0 -3px 0 rgb(0 0 0 / 0.28);
   transition: width 0.12s linear;
+}
+.fuse--urgent .fuse__rope {
+  filter: saturate(1.5) hue-rotate(-14deg);
+}
+.fuse__flame {
+  position: absolute;
+  right: -1.05rem;
+  top: 50%;
+  width: 2.1rem;
+  height: 2.1rem;
+  margin-top: -1.2rem;
+  font-size: 1.9rem;
+  line-height: 1;
+  text-align: center;
+  pointer-events: none;
+  filter: drop-shadow(0 0 8px rgb(255 160 40 / 0.9));
+  transform-origin: 50% 85%;
+  animation: fuse-flicker 0.2s ease-in-out infinite alternate;
+}
+.fuse--urgent .fuse__flame {
+  font-size: 2.6rem;
+  margin-top: -1.7rem;
+  right: -1.35rem;
+  animation-duration: 0.11s;
+}
+/* 폰(작은 크기)에서는 불꽃도 작게 */
+.fuse--sm .fuse__flame {
+  font-size: 1.45rem;
+  width: 1.6rem;
+  height: 1.6rem;
+  margin-top: -0.95rem;
+  right: -0.8rem;
+}
+.fuse--sm.fuse--urgent .fuse__flame {
+  font-size: 1.9rem;
+  margin-top: -1.25rem;
+  right: -1rem;
+}
+.fuse__spark {
+  position: absolute;
+  right: -0.2rem;
+  top: 50%;
+  width: 0.28rem;
+  height: 0.28rem;
+  border-radius: 50%;
+  background: #ffd36b;
+  box-shadow: 0 0 6px 2px rgb(255 190 70 / 0.9);
+  opacity: 0;
+  animation: fuse-spark 0.7s ease-out infinite;
+}
+.fuse__bomb {
+  display: grid;
+  flex-shrink: 0;
+  place-items: center;
+  border-radius: 50%;
+  font-weight: 900;
+  font-variant-numeric: tabular-nums;
+  background: radial-gradient(circle at 35% 30%, #4b6bb0, #1d2d50 70%);
+  box-shadow:
+    0 0 0 4px rgb(209 173 114 / 0.85),
+    0 6px 14px rgb(0 0 0 / 0.45);
+}
+.fuse--urgent .fuse__bomb {
+  background: radial-gradient(circle at 35% 30%, #ff7a7a, #b91c1c 70%);
+  box-shadow:
+    0 0 0 4px rgb(255 200 120 / 0.95),
+    0 0 26px rgb(248 80 80 / 0.7);
+  animation: fuse-shake 0.3s ease-in-out infinite;
+}
+.fuse__num {
+  display: block;
+  animation: fuse-tick 0.45s cubic-bezier(0.2, 1.6, 0.4, 1) both;
+}
+@keyframes fuse-flicker {
+  0% {
+    transform: translateY(0) scale(0.92, 1.04) rotate(-7deg);
+  }
+  100% {
+    transform: translateY(-2px) scale(1.08, 0.94) rotate(7deg);
+  }
+}
+@keyframes fuse-spark {
+  0% {
+    transform: translate(0, 0) scale(1);
+    opacity: 1;
+  }
+  100% {
+    transform: translate(var(--dx), var(--dy)) scale(0.2);
+    opacity: 0;
+  }
+}
+@keyframes fuse-shake {
+  0%,
+  100% {
+    transform: translateX(0) rotate(0);
+  }
+  25% {
+    transform: translateX(-3px) rotate(-5deg);
+  }
+  75% {
+    transform: translateX(3px) rotate(5deg);
+  }
+}
+@keyframes fuse-tick {
+  0% {
+    transform: scale(1.6);
+    opacity: 0.4;
+  }
+  100% {
+    transform: scale(1);
+    opacity: 1;
+  }
 }
 
 /* 점수판: 줄이 새 순위 자리로 쑥 올라가고 내려감 */
@@ -882,7 +1015,11 @@ body {
   .arrow-bounce-down,
   .fx-rise,
   .fx-fall,
-  .crown-drop {
+  .crown-drop,
+  .fuse__flame,
+  .fuse__spark,
+  .fuse__num,
+  .fuse--urgent .fuse__bomb {
     animation: none !important;
   }
   .board-row {
