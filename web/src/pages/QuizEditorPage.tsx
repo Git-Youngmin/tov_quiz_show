@@ -28,7 +28,8 @@ interface Draft {
 }
 
 let keySeq = 0;
-const blankQuestion = (type: QuestionType = "choice"): DraftQuestion => ({
+/** 새 문제는 O/X 가 기본. 4지선다는 문제 카드의 유형 버튼으로 바꾼다 */
+const blankQuestion = (type: QuestionType = "ox"): DraftQuestion => ({
   key: ++keySeq,
   type,
   text: "",
@@ -178,11 +179,11 @@ function Editor() {
     if (draft && draft.questions.length === 1) return setNotice({ kind: "error", text: "문제는 최소 1개가 있어야 해요" });
     edit((d) => ({ ...d, questions: d.questions.filter((_, j) => j !== i) }));
   };
-  const addQuestion = (type: QuestionType) => {
+  const addQuestion = () => {
     if (draft && draft.questions.length >= QUIZ_LIMITS.questionsMax) {
       return setNotice({ kind: "error", text: `문제는 ${QUIZ_LIMITS.questionsMax}개까지예요` });
     }
-    edit((d) => ({ ...d, questions: [...d.questions, blankQuestion(type)] }));
+    edit((d) => ({ ...d, questions: [...d.questions, blankQuestion()] }));
     setTimeout(() => bottomRef.current?.scrollIntoView({ behavior: "smooth" }), 50);
   };
   /** O/X ↔ 4지선다 전환. 정답이 3·4번이었다면 O/X 에서는 첫 번째로 되돌린다 */
@@ -434,14 +435,9 @@ function Editor() {
             ))}
 
             <div ref={bottomRef} className="flex items-center justify-between pb-10">
-              <div className="flex gap-2">
-                <button onClick={() => addQuestion("ox")} className="rounded-xl bg-white/10 px-5 py-3 font-bold">
-                  ＋ O/X 문제
-                </button>
-                <button onClick={() => addQuestion("choice")} className="rounded-xl bg-white/10 px-5 py-3 font-bold">
-                  ＋ 4지선다 문제
-                </button>
-              </div>
+              <button onClick={addQuestion} className="rounded-xl bg-white/10 px-5 py-3 font-bold">
+                ＋ 문제 추가
+              </button>
               <span className="text-sm text-mist">
                 {draft.questions.length} / {QUIZ_LIMITS.questionsMax}문제
               </span>
