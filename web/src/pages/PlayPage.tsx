@@ -204,6 +204,17 @@ function PlayerGame({ pin, profile, onEditProfile }: { pin: string; profile: Pro
   });
   const sendJoin = () => r.send({ type: "join", nickname: profile.nickname, character: profile.character });
 
+  // 훅은 아래의 조건부 return 보다 반드시 위에 있어야 한다 (순서가 바뀌면 React 가 화면을 통째로 꺼 버림)
+  useEffect(() => {
+    if (r.myResult) {
+      if (r.myResult.correct) {
+        sound.playCorrect();
+      } else {
+        sound.playWrong();
+      }
+    }
+  }, [r.myResult]);
+
   if (r.kicked) return <Center title="진행자가 방에서 내보냈어요" />;
 
   const state = r.state;
@@ -223,16 +234,6 @@ function PlayerGame({ pin, profile, onEditProfile }: { pin: string; profile: Pro
 
   const ranking = rankPlayers(state);
   const myRank = ranking.find((e) => e.playerId === playerId);
-
-  useEffect(() => {
-    if (r.myResult) {
-      if (r.myResult.correct) {
-        sound.playCorrect();
-      } else {
-        sound.playWrong();
-      }
-    }
-  }, [r.myResult]);
 
   return (
     <main className="flex min-h-full flex-col">
