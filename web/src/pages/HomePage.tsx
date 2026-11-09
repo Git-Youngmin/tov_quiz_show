@@ -71,11 +71,6 @@ export default function HomePage() {
               TOV QUIZ
             </h1>
           </div>
-
-          <p className="animate-rise mx-auto mt-6 max-w-lg text-base sm:text-xl font-medium leading-relaxed text-mist" style={{ animationDelay: "0.16s" }}>
-            대답만 하는 퀴즈 말고, 모두가 열광하는 실시간 퀴즈쇼.<br className="hidden sm:inline" />
-            스크린은 보고, 스마트폰으로는 누르고!
-          </p>
         </section>
 
         {/* 무대: 활기차게 움직이는 캐릭터 친구들 */}
@@ -94,7 +89,6 @@ export default function HomePage() {
               ✏️
             </span>
             <span className="mt-2 block text-2xl font-extrabold">문제 만들기</span>
-            <span className="mt-1 block text-sm text-mist">퀴즈를 만들고 고쳐요 · 단톡방 글 붙여넣기도 OK</span>
           </Link>
           {/* PLAY = 스크린에 띄우는 진행 화면. 참가자는 여기를 거치지 않고 QR 로 바로 입장한다 */}
           <Link to="/host" className="btn-gold animate-rise order-first rounded-3xl p-7 text-center sm:order-none" style={{ animationDelay: "0.24s" }}>
@@ -102,7 +96,6 @@ export default function HomePage() {
               🎮
             </span>
             <span className="mt-2 block text-2xl font-extrabold tracking-wider">PLAY</span>
-            <span className="mt-1 block text-sm opacity-75">스크린에 띄우면 QR · PIN 으로 친구들이 입장해요</span>
           </Link>
         </section>
 
