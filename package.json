@@ -1,0 +1,24 @@
+{
+  "name": "tob-quiz-show",
+  "private": true,
+  "workspaces": [
+    "shared",
+    "server",
+    "web"
+  ],
+  "scripts": {
+    "dev:server": "npm run dev -w @tob/server",
+    "dev:web": "npm run dev -w @tob/web",
+    "build": "npm run build -w @tob/web",
+    "typecheck": "npm run typecheck -w @tob/shared && npm run typecheck -w @tob/server && npm run typecheck -w @tob/web",
+    "test": "npm run test -w @tob/shared",
+    "test:e2e": "node server/scripts/e2e-test.mjs",
+    "db:migrate:local": "npm run db:migrate:local -w @tob/server",
+    "db:migrate:remote": "npm run db:migrate:remote -w @tob/server",
+    "deploy:server": "npm run deploy -w @tob/server",
+    "deploy:web": "npm run deploy -w @tob/web"
+  },
+  "engines": {
+    "node": ">=20"
+  }
+}

@@ -1,0 +1,23 @@
+{
+  "name": "@tob/server",
+  "version": "0.1.0",
+  "private": true,
+  "type": "module",
+  "scripts": {
+    "dev": "wrangler dev",
+    "deploy": "wrangler deploy",
+    "typecheck": "tsc -p .",
+    "cf-typegen": "wrangler types",
+    "db:migrate:local": "wrangler d1 execute tob-quiz-db --local --file=./schema.sql && wrangler d1 execute tob-quiz-db --local --file=./seed.sql",
+    "db:migrate:remote": "wrangler d1 execute tob-quiz-db --remote --file=./schema.sql"
+  },
+  "dependencies": {
+    "@tob/shared": "*",
+    "partyserver": "^0.5.10"
+  },
+  "devDependencies": {
+    "@cloudflare/workers-types": "^5.20261101.0",
+    "typescript": "^5.9.0",
+    "wrangler": "^4.158.0"
+  }
+}

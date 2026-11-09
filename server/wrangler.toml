@@ -1,0 +1,37 @@
+# 토브 퀴즈쇼 백엔드 — Cloudflare Worker + PartyServer(PartyKit on Durable Objects)
+# 처음 배포 전 아래 "TODO" 표시된 id 를 실제 값으로 바꾸세요 (README 참고).
+name = "tob-quiz-server"
+main = "src/index.ts"
+compatibility_date = "2026-10-01"
+compatibility_flags = ["nodejs_compat"]
+
+# ── 실시간 방: PIN 하나 = Durable Object 인스턴스 하나 ──
+# WebSocket 경로: /parties/quiz-room/<PIN>  (바인딩 이름 QuizRoom → kebab-case "quiz-room")
+[[durable_objects.bindings]]
+name = "QuizRoom"
+class_name = "QuizRoom"
+
+[[migrations]]
+tag = "v1"
+new_sqlite_classes = ["QuizRoom"]
+
+# ── D1: 퀴즈 세트 / 문항 / 게임 통계 ──
+# 생성: npx wrangler d1 create tob-quiz-db  → 출력된 database_id 를 아래에 입력
+[[d1_databases]]
+binding = "DB"
+database_name = "tob-quiz-db"
+database_id = "00000000-0000-0000-0000-000000000000" # TODO
+
+# ── KV: PIN → 방 정보 (빠른 조회, TTL 6시간) ──
+# 생성: npx wrangler kv namespace create ROOMS  → 출력된 id 를 아래에 입력
+[[kv_namespaces]]
+binding = "ROOMS"
+id = "00000000000000000000000000000000" # TODO
+
+[vars]
+# 프론트엔드(Cloudflare Pages) 도메인. 쉼표로 여러 개, "*" 는 전체 허용
+ALLOWED_ORIGINS = "*"
+
+# 비밀값은 vars 가 아니라 secret 으로:
+#   npx wrangler secret put ADMIN_PASSWORD
+# 로컬 개발은 server/.dev.vars 파일에 ADMIN_PASSWORD=... 작성

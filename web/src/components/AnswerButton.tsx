@@ -1,0 +1,42 @@
+import type { AnswerIndex } from "@tob/shared";
+import type { ReactNode } from "react";
+
+/** 보기 1~4 = 빨강▲ / 파랑◆ / 노랑● / 초록■ */
+export const ANSWER_STYLES = [
+  { bg: "bg-red-500", icon: "▲", label: "빨강" },
+  { bg: "bg-blue-500", icon: "◆", label: "파랑" },
+  { bg: "bg-yellow-400", icon: "●", label: "노랑" },
+  { bg: "bg-green-500", icon: "■", label: "초록" },
+] as const;
+
+export function AnswerButton({
+  index,
+  onClick,
+  disabled,
+  dimmed,
+  children,
+}: {
+  index: AnswerIndex;
+  onClick?: () => void;
+  disabled?: boolean;
+  dimmed?: boolean;
+  children?: ReactNode;
+}) {
+  const s = ANSWER_STYLES[index];
+  return (
+    <button
+      type="button"
+      onClick={onClick}
+      disabled={disabled}
+      aria-label={`${index + 1}번 ${s.label}`}
+      className={`${s.bg} flex items-center gap-4 ${children ? "" : "justify-center"} rounded-2xl p-4 text-left font-bold text-white shadow-[0_6px_0_rgba(0,0,0,0.25)] transition active:translate-y-1 active:shadow-none disabled:cursor-default ${
+        dimmed ? "opacity-30" : ""
+      }`}
+    >
+      <span className={`drop-shadow ${children ? "text-4xl" : "text-7xl"}`} aria-hidden>
+        {s.icon}
+      </span>
+      {children && <span className="text-xl sm:text-2xl">{children}</span>}
+    </button>
+  );
+}
