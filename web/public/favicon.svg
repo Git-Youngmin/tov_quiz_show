@@ -1,0 +1,16 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 64 64">
+  <title>TOV QUIZ</title>
+  <defs>
+    <linearGradient id="bg" x1="0" y1="0" x2="0.6" y2="1"><stop offset="0" stop-color="#3a5aa0"/><stop offset="1" stop-color="#0f1c3c"/></linearGradient>
+    <radialGradient id="head" cx="35%" cy="25%" r="90%"><stop offset="0" stop-color="#9fd0ff"/><stop offset=".55" stop-color="#4da3ff"/><stop offset="1" stop-color="#2b78d9"/></radialGradient>
+  </defs>
+  <rect width="64" height="64" rx="14" fill="url(#bg)"/>
+  <circle cx="16" cy="19" r="10" fill="#4da3ff"/><circle cx="16" cy="19" r="5" fill="#ffe2cc"/>
+  <circle cx="48" cy="19" r="10" fill="#4da3ff"/><circle cx="48" cy="19" r="5" fill="#ffe2cc"/>
+  <circle cx="32" cy="37" r="25" fill="url(#head)"/>
+  <ellipse cx="32" cy="47" rx="13" ry="9.5" fill="#ffe9d6"/>
+  <ellipse cx="32" cy="42" rx="4.6" ry="3.2" fill="#1b2340"/>
+  <path d="M25 50q7 6.5 14 0" stroke="#1b2340" stroke-width="2.4" fill="none" stroke-linecap="round"/>
+  <ellipse cx="22.5" cy="33" rx="4.8" ry="6" fill="#1b2340"/><circle cx="24.2" cy="30.6" r="1.9" fill="#fff"/>
+  <ellipse cx="41.5" cy="33" rx="4.8" ry="6" fill="#1b2340"/><circle cx="43.2" cy="30.6" r="1.9" fill="#fff"/>
+</svg>
