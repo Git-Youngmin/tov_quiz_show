@@ -16,7 +16,8 @@
     "db:migrate:local": "npm run db:migrate:local -w @tob/server",
     "db:migrate:remote": "npm run db:migrate:remote -w @tob/server",
     "deploy:server": "npm run deploy -w @tob/server",
-    "deploy:web": "npm run deploy -w @tob/web"
+    "deploy:web": "npm run deploy -w @tob/web",
+    "capture": "node scripts/capture.cjs"
   },
   "engines": {
     "node": ">=20"
