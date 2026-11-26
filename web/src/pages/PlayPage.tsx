@@ -222,6 +222,7 @@ function PlayerGame({ pin, profile, onEditProfile }: { pin: string; profile: Pro
   }, [r.myResult]);
 
   if (r.kicked) return <Center title="진행자가 방에서 내보냈어요" />;
+  if (r.closed) return <Center title="진행자가 나가서 퀴즈가 끝났어요" />;
 
   const state = r.state;
   const me = state?.players[playerId];

@@ -101,6 +101,39 @@ for (let i = 0; i < quiz.questionCount; i++) {
 host.send({ type: "host:next" });
 const fin = await host.next((m) => m.type === "state" && m.state.status === "finished");
 assert(fin.state.status === "finished", "게임 종료");
-for (const c of [host, a, b, fake]) c.ws.close();
+
+console.log("진행자가 나가면 방이 끝남 (유예 10초)");
+// 끝난 게임: 진행자가 나가도 폰의 최종 결과 화면은 그대로 둔다 (아래 새 방 시험이 끝난 뒤에 확인)
+host.ws.close();
+
+const room2 = await (await fetch(`${BASE}/api/rooms`, { method: "POST", headers: auth, body: JSON.stringify({ quizId: quiz.id }) })).json();
+const h2 = connect(room2.pin, { role: "host", token: room2.hostToken });
+await h2.opened;
+const p2 = connect(room2.pin, { role: "player", _pk: "p-x" });
+await p2.opened;
+p2.send({ type: "join", nickname: "룻", character: { shape: "capsule", color: "blue" } });
+await h2.next((m) => m.type === "state" && Object.keys(m.state.players).length === 1);
+
+// 1) 잠깐 끊겼다가 유예 안에 돌아오면 방이 유지됨
+h2.ws.close();
+await sleep(2000);
+const h2b = connect(room2.pin, { role: "host", token: room2.hostToken });
+await h2b.opened;
+await h2b.next((m) => m.type === "state");
+await sleep(9000); // 처음 끊긴 시각으로부터 10초가 넘었지만 진행자가 돌아왔으므로 유지
+assert((await fetch(`${BASE}/api/rooms/${room2.pin}`)).status === 200, "유예 안에 돌아오면 방이 유지됨");
+assert(await p2.next((m) => m.type === "closed", 300).then(() => false, () => true), "그때까지 참가자에게 종료 알림이 가지 않음");
+
+// 2) 돌아오지 않으면 방이 끝나고 폰에 알림, PIN 삭제
+h2b.ws.close();
+const closed = await p2.next((m) => m.type === "closed", 14000);
+assert(closed.type === "closed", "진행자가 나가고 10초가 지나면 참가자에게 종료 알림");
+await sleep(300);
+assert((await fetch(`${BASE}/api/rooms/${room2.pin}`)).status === 404, "끝난 방의 PIN 은 더 이상 쓸 수 없음");
+
+// 3) 이미 끝난 게임(첫 방)은 진행자가 나가도 폰에 종료 알림이 가지 않음
+assert(await a.next((m) => m.type === "closed", 300).then(() => false, () => true), "최종 결과까지 간 게임은 진행자가 나가도 그대로 유지");
+
+for (const c of [a, b, fake, p2]) c.ws.close();
 console.log("\n모든 확인 통과 ✅");
 process.exit(0);

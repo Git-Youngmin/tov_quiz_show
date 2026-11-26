@@ -16,6 +16,8 @@ export interface RoomView {
   myResult: Extract_<"result:player"> | null;
   error: string | null;
   kicked: boolean;
+  /** 진행자가 나가서 방이 끝남 */
+  closed: boolean;
   connected: boolean;
 }
 
@@ -29,6 +31,7 @@ const EMPTY: RoomView = {
   myResult: null,
   error: null,
   kicked: false,
+  closed: false,
   connected: false,
 };
 
@@ -64,6 +67,8 @@ export function useRoom(opts: {
       // 카운트다운이 모든 화면에서 같이 가도록 서버 시계와의 차이를 기억
       if (msg.type === "question:host" || msg.type === "question:player") syncServerClock(msg.now);
       setView((v) => reduce(v, msg));
+      // 끝난 방/내보내진 방에는 자동 재접속을 멈춘다 (계속 두드리지 않도록)
+      if (msg.type === "closed" || msg.type === "kicked") socket.close();
     },
   });
 
@@ -93,5 +98,7 @@ function reduce(v: RoomView, msg: ServerMessage): RoomView {
       return { ...v, error: msg.message };
     case "kicked":
       return { ...v, kicked: true };
+    case "closed":
+      return { ...v, closed: true };
   }
 }

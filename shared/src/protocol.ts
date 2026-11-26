@@ -220,7 +220,9 @@ export type ServerMessage =
       rank: number;
       totalPlayers: number;
     }
-  | { type: "kicked" };
+  | { type: "kicked" }
+  /** 진행자가 나가서 방이 끝났음 (최종 결과 전에만 보냄) */
+  | { type: "closed" };
 
 // ───────────────────────── 퀴즈 편집 ─────────────────────────
 

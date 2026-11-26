@@ -28,6 +28,8 @@ import type { Env } from "./env.ts";
 
 /** 네트워크 지연을 감안해 제한 시간 뒤 조금 더 기다렸다가 마감 */
 const GRACE_MS = 500;
+/** 진행자 연결이 끊긴 뒤 이 시간 안에 돌아오지 않으면 방을 끝낸다 (와이파이가 잠깐 끊긴 경우를 살리려는 유예) */
+const HOST_GONE_MS = 10_000;
 
 interface PendingAnswer {
   choice: AnswerIndex;
@@ -47,6 +49,7 @@ export class QuizRoom extends Server<Env> {
   private questionEndsAt = 0;
   private gameStartedAt = 0;
   private timer: ReturnType<typeof setTimeout> | null = null;
+  private hostGoneTimer: ReturnType<typeof setTimeout> | null = null;
 
   async onStart() {
     this.room = {
@@ -81,7 +84,9 @@ export class QuizRoom extends Server<Env> {
     this.send(conn, { type: "state", state: this.room });
 
     if (conn.tags.includes("host")) {
-      // 진행자가 새로고침해도 진행 중인 문제를 다시 받도록
+      // 유예 시간 안에 진행자가 돌아왔으면 방을 끝내지 않는다 (네트워크가 잠깐 끊긴 경우)
+      this.clearHostGoneTimer();
+      // 진행 중인 문제를 다시 받도록
       if (this.room.status === "playing") this.sendQuestionTo(conn, "host");
       return;
     }
@@ -95,6 +100,15 @@ export class QuizRoom extends Server<Env> {
   }
 
   onClose(conn: Connection) {
+    if (conn.tags.includes("host")) {
+      // 진행자가 페이지를 나가면 방을 끝낸다. 최종 결과 화면은 폰에서 계속 볼 수 있게 그대로 둔다.
+      const otherHostOnline = [...this.getConnections("host")].some((c) => c.id !== conn.id);
+      if (!otherHostOnline && this.room.status !== "finished") {
+        this.clearHostGoneTimer();
+        this.hostGoneTimer = setTimeout(() => this.closeRoom(), HOST_GONE_MS);
+      }
+      return;
+    }
     const player = this.room.players[conn.id];
     if (!player) return;
     if (this.room.status === "lobby") delete this.room.players[conn.id];
@@ -347,6 +361,21 @@ export class QuizRoom extends Server<Env> {
   private clearTimer() {
     if (this.timer) clearTimeout(this.timer);
     this.timer = null;
+  }
+
+  private clearHostGoneTimer() {
+    if (this.hostGoneTimer) clearTimeout(this.hostGoneTimer);
+    this.hostGoneTimer = null;
+  }
+
+  /** 진행자가 없어 방을 끝낸다: 폰에 알리고, 연결을 닫고, PIN 을 지워 새로 들어오지 못하게 한다 */
+  private closeRoom() {
+    this.hostGoneTimer = null;
+    if (this.room.status === "finished") return;
+    this.clearTimer();
+    this.broadcastMsg({ type: "closed" });
+    for (const c of this.getConnections()) c.close(4003, "host-left");
+    this.ctx.waitUntil(this.env.ROOMS.delete(this.name));
   }
 
   private send(conn: Connection, msg: ServerMessage) {
